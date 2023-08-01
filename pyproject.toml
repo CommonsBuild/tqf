@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "alloha"
+version = "0.1.0"
+description = "Alloha is a TEC SME Signal Boosting Process for Quadradic Funding of TE Public Goods. It is a python tooling kit with dune analytics reference data for data science techniques in the domain of Token Engineering, specifically applied to TEC. Developed in collaboration with the TEC Coordination team."
+authors = ["linuxiscool.eth, 0xr3x, TEC Coordination"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
