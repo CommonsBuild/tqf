@@ -33,6 +33,8 @@ class QuadraticFunding(param.Parameterized):
             ylim=self.param['b'].bounds,
             width=1000,
             height=800,
+            xlabel="Donation Amount",
+            ylabel="Boost Factor",
             x='m', y='b', C='ratio', cmap='viridis', colorbar=True)
         
         # Add point for current m and b
