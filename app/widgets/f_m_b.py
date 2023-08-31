@@ -43,8 +43,11 @@ class QuadraticFunding(param.Parameterized):
         return hv.Points([(self.m, self.b)]).opts(size=8, color='red')
 
     @param.depends('F', 'm', 'b')
-    def view(self):
+    def view_heatmap(self):
         return self.heatmap() * self.plot_point()
+
+    def view(self):
+        return pn.Row(self.param, self.view_heatmap, self.report)
 
     @pn.depends('F', 'm', 'b')
     def report(self):
@@ -73,10 +76,10 @@ class QuadraticFunding(param.Parameterized):
         $$ F''/F = {(sqrt_F + sqrt_m*sqrt_b)**2/self.F:.2f}$$  
 
         Impact of the Boosting:  
-        $$ (F''-F')/F = {100*((sqrt_F + sqrt_m*sqrt_b)**2-(sqrt_F + sqrt_m)**2)/self.F:.0f}$$%  
+        $$ F''-F' = {100*((sqrt_F + sqrt_m*sqrt_b)**2-(sqrt_F + sqrt_m)**2)/self.F:.0f}$$%  
         """
         return pn.pane.Markdown(explanation, width=400, styles={'text-align': "center"})
 
 qf = QuadraticFunding()
-pn.Row(qf.param, qf.view, qf.report).servable()
+pn.Row(qf.param, qf.view, qf.report)
 
