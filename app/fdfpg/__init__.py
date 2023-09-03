@@ -156,6 +156,15 @@ class PopulationFunctionGenerator(pm.Parameterized):
             )(),
         )
 
+    @pm.depends(
+        'steepness_lbound',
+        'steepness_rbound',
+        'f0_mu',
+        'f0_sigma',
+        'f1_mu',
+        'f1_sigma',
+        watch=True,
+    )
     def _sample(self):
         value_functions = [
             self.value_function_generator(
@@ -166,13 +175,13 @@ class PopulationFunctionGenerator(pm.Parameterized):
 
         self.value_functions = value_functions
 
-    @pm.depends('i')
+    # @pm.depends('i')
     def samples_view(self):
         return self.value_functions[self.i].chart_view()
 
-    @pm.depends('i')
+    @pm.depends('i', 'steepness_lbound')
     def view(self):
-        return pn.Row(self, self.samples_view)
+        return pn.Row(self, self.samples_view())
 
 
 population_function_generator = PopulationFunctionGenerator(
@@ -186,3 +195,5 @@ app = population_function_generator.view()
 if __name__ == '__main__':
     print(society)
     print(concave_gen)
+    print(population_function_generator)
+    print('here')
