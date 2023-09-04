@@ -5,15 +5,23 @@ import panel as pn
 import param as pm
 from icecream import ic
 
+import logging
+def exception_handler(ex):
+    ic("🔥🔥🔥")
+    logging.error("Error", exc_info=ex)
+    pn.state.notifications.send('Error: %s' % ex, duration=int(10e3), background='black')
+pn.extension(exception_handler=exception_handler, notifications=True)
+pn.state.notifications.position = 'top-right'
+
 
 class Donations(pm.Parameterized):
-    dataset = pm.DataFrame(default=None, columns={'voter', 'amountUSD'})
     file = pm.FileSelector(
         default='./app/input/vote_coefficients_input.csv',
         path='./app/input/*.csv',
         precedence=0.5,
     )
-    page_size = pm.Integer(default=20, bounds=(5, 100))
+    page_size = pm.Integer(default=20)
+    dataset = pm.DataFrame(default=None, columns={'voter', 'amountUSD'}, label="Donations Dataset")
 
     def __init__(self, **params):
         super().__init__(**params)
@@ -27,6 +35,7 @@ class Donations(pm.Parameterized):
     def view(self):
         view = pn.Param(
             self.param,
+            sort=False,
             widgets={
                 'dataset': {
                     'widget_type': pn.widgets.Tabulator,
@@ -40,13 +49,9 @@ class Donations(pm.Parameterized):
         return view
 
 
-donations = Donations(page_size=5)
+donations = Donations()
 
-# pn.widgets.Tabulator.theme = 'simple'
-# pn.widgets.Tabulator(df_qf, layout='fit_data_table', page_size=5)
-
-
-app = pn.panel(donations.view())
+app = pn.Column(donations.view)
 
 if __name__ == '__main__':
     print(donations)
