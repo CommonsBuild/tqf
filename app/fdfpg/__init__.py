@@ -87,7 +87,7 @@ class ConcaveFunctionGenerator(pm.Parameterized):
         x = self.x()
         y = self.f(x)
         df = pd.DataFrame({'x': x, 'y': y})
-        return df.hvplot.line(x='x', y='y', ylim=(0, 1.01))
+        return df.hvplot.line(x='x', y='y', ylim=(-0.01, 1.01))
 
     def view(self):
         return pn.Row(self, self.chart_view)
@@ -110,8 +110,8 @@ class PopulationFunctionGenerator(pm.Parameterized):
         default=20, bounds=(1, 20), doc='Upper Bound of Steepness'
     )
     n = pm.Integer(constant=True)
-    society = pm.Selector(default=society, objects=[society], instantiate=True)
-    value_function_generator = pm.Selector(
+    society = pm.ObjectSelector(default=society, objects=[society], instantiate=True)
+    value_function_generator = pm.ObjectSelector(
         default=ConcaveFunctionGenerator,
         objects=[ConcaveFunctionGenerator],
         instantiate=True,
@@ -166,11 +166,10 @@ class PopulationFunctionGenerator(pm.Parameterized):
 
         self.value_functions = value_functions
 
-    @pm.depends('i')
     def samples_view(self):
         return self.value_functions[self.i].chart_view()
 
-    @pm.depends('i')
+    @pm.depends('i', 'value_functions')
     def view(self):
         return pn.Row(self, self.samples_view)
 
