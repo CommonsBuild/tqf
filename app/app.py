@@ -25,6 +25,7 @@ import panel as pn
 # tea_boost.view().servable()
 #
 from fdfpg import app
+from tegr1 import app
 
 # from ygg_what_i_learned_c import h1, h2, sample_p_i_slider, u, value_functions
 # from ygg_what_i_learned_d import (
