@@ -124,8 +124,8 @@ class Boost(pm.Parameterized):
         constant=True, precedence=-1, doc='The resulting distribution.'
     )
     logy = pm.Boolean(False)
-    transformation = pm.ObjectSelector(
-        'Sigmoid', objects=['Threshold', 'Linear', 'Sigmoid']
+    transformation = pm.Selector(
+        default='Sigmoid', objects=['Threshold', 'Linear', 'Sigmoid']
     )
     threshold = pm.Number(100, precedence=-1, bounds=(0, 1000), step=1)
     sigmoid_frequency = pm.Number(1, precedence=-1, bounds=(0.1, 5))
@@ -212,21 +212,42 @@ class Boost(pm.Parameterized):
         return pn.Row(self, self.view_distribution)
 
 
-# boost = Boost(input=tec_distribution)
-boost = Boost(signal=tec_distribution.dataset['balance'])
+tegr1_tec_boost = Boost(
+    signal=tec_distribution.dataset['balance'],
+    transformation='Threshold',
+    threshold=10,
+    input=tec_distribution,
+)
+
+tegr1_tea_boost = Boost(
+    signal=tec_distribution.dataset['balance'],
+    transformation='Threshold',
+    threshold=1,
+    input=tea_distribution,
+)
 
 
 class BoostFactory(pm.Parameterized):
-    boosts = pm.List(default=[boost], class_=Boost)
+    template = pm.Selector(
+        default=tegr1_tec_boost,
+        objects=[tegr1_tec_boost, tegr1_tea_boost],
+    )
+    boosts = pm.List(default=[], class_=Boost, precedence=-1)
     new_boost = pm.Action(lambda self: self._new_boost())
+    remove_boost = pm.Action(lambda self: self._remove_boost())
 
     def _new_boost(self):
-        self.boosts.append(Boost())
+        self.boosts.append(Boost(**self.template.param.values()))
         self.param.trigger('boosts')
+
+    def _remove_boost(self):
+        if len(self.boosts):
+            self.boosts.pop()
+            self.param.trigger('boosts')
 
     @pm.depends('boosts', watch=True)
     def boosts_view(self):
-        return pn.Column(*self.boosts)
+        return pn.Column(*[boost.view for boost in self.boosts])
 
     @pm.depends('boosts')
     def view(self):
@@ -239,7 +260,7 @@ app = pn.Tabs(
     ('Donations', donations.view()),
     ('Token Distribution', tec_distribution.view()),
     ('TEA Token Distribution', tea_distribution.view()),
-    ('SME Signal Boost', boost.view()),
+    ('SME Signal Boost', tegr1_tec_boost.view()),
     ('Boost Factory', boost_factory.view()),
     active=4,
 )
