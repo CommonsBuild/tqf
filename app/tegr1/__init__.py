@@ -127,7 +127,7 @@ class Boost(pm.Parameterized):
     transformation = pm.Selector(
         default='Sigmoid', objects=['Threshold', 'Linear', 'Sigmoid']
     )
-    threshold = pm.Number(100, precedence=-1, bounds=(0, 1000), step=1)
+    threshold = pm.Number(100, precedence=-1, bounds=(0, 10_000), step=1)
     sigmoid_frequency = pm.Number(1, precedence=-1, bounds=(0.1, 5))
     sigmoid_shift = pm.Number(0, precedence=-1, bounds=(-5, 5))
 
@@ -165,18 +165,26 @@ class Boost(pm.Parameterized):
 
     @pm.depends('transformation', watch=True)
     def show_transformation_params(self):
-
+        """
+        This function controls which parameters are visible depending on which transformer is selected.
+        """
         with pm.parameterized.batch_call_watchers(self):
+            # Set all function parameters to not visible
             self.param['threshold'].precedence = -1
             self.param['sigmoid_frequency'].precedence = -1
             self.param['sigmoid_shift'].precedence = -1
+            # self.param['logy'].precedence = -1
 
             if self.transformation == 'Threshold':
                 self.param['threshold'].precedence = 1
 
             if self.transformation == 'Sigmoid':
+                self.param['logy'].precedence = 1
                 self.param['sigmoid_frequency'].precedence = 1
                 self.param['sigmoid_shift'].precedence = 1
+
+            if self.transformation == 'Linear':
+                self.param['logy'].precedence = 1
 
         self.update_distribution()
 
@@ -205,11 +213,20 @@ class Boost(pm.Parameterized):
         return (
             self.distribution.sort_values(ascending=False)
             .reset_index(drop=True)
-            .hvplot.step()
+            .hvplot.step(ylim=(-0.01, 1.01))
+            .opts(shared_axes=False)
+        )
+
+    def view_signal(self):
+        return (
+            self.signal.sort_values(ascending=False)
+            .reset_index(drop=True)
+            .hvplot.step(logy=self.logy)
+            .opts(shared_axes=False)
         )
 
     def view(self):
-        return pn.Row(self, self.view_distribution)
+        return pn.Row(self, pn.Column(self.view_signal, self.view_distribution))
 
 
 tegr1_tec_boost = Boost(
@@ -262,7 +279,7 @@ app = pn.Tabs(
     ('TEA Token Distribution', tea_distribution.view()),
     ('SME Signal Boost', tegr1_tec_boost.view()),
     ('Boost Factory', boost_factory.view()),
-    active=4,
+    active=3,
 )
 
 
