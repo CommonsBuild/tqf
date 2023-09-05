@@ -110,6 +110,8 @@ class TEA(TokenDistribution):
 
 tea_distribution = TEA()
 
+from bokeh.models import NumeralTickFormatter
+
 
 class Boost(pm.Parameterized):
     input = pm.Selector(
@@ -210,20 +212,22 @@ class Boost(pm.Parameterized):
         )
 
     def view_distribution(self):
-        return (
+        distribution_view = (
             self.distribution.sort_values(ascending=False)
             .reset_index(drop=True)
-            .hvplot.step(ylim=(-0.01, 1.01))
-            .opts(shared_axes=False)
+            .hvplot.step(ylim=(-0.01, 1.01), title='Boost Factor')
+            .opts(shared_axes=False, yformatter=NumeralTickFormatter(format='0.00'))
         )
+        return distribution_view
 
     def view_signal(self):
-        return (
+        signal_view = (
             self.signal.sort_values(ascending=False)
             .reset_index(drop=True)
-            .hvplot.step(logy=self.logy)
-            .opts(shared_axes=False)
+            .hvplot.step(logy=self.logy, title='Token Balance')
+            .opts(shared_axes=False, yformatter=NumeralTickFormatter(format='0.a'))
         )
+        return signal_view
 
     def view(self):
         return pn.Row(self, pn.Column(self.view_signal, self.view_distribution))
