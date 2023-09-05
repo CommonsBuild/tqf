@@ -222,10 +222,15 @@ class BoostFactory(pm.Parameterized):
 
     def _new_boost(self):
         self.boosts.append(Boost())
+        self.param.trigger('boosts')
+
+    @pm.depends('boosts', watch=True)
+    def boosts_view(self):
+        return pn.Column(*self.boosts)
 
     @pm.depends('boosts')
     def view(self):
-        return pn.Row(self, pn.Column(*self.boosts))
+        return pn.Row(self, self.boosts_view)
 
 
 boost_factory = BoostFactory()
