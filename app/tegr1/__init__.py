@@ -212,14 +212,31 @@ class Boost(pm.Parameterized):
         return pn.Row(self, self.view_distribution)
 
 
-boost = Boost(input=tec_distribution)
+# boost = Boost(input=tec_distribution)
+boost = Boost(signal=tec_distribution.dataset['balance'])
+
+
+class BoostFactory(pm.Parameterized):
+    boosts = pm.List(default=[boost], class_=Boost)
+    new_boost = pm.Action(lambda self: self._new_boost())
+
+    def _new_boost(self):
+        self.boosts.append(Boost())
+
+    @pm.depends('boosts')
+    def view(self):
+        return pn.Row(self, pn.Column(*self.boosts))
+
+
+boost_factory = BoostFactory()
 
 app = pn.Tabs(
     ('Donations', donations.view()),
     ('Token Distribution', tec_distribution.view()),
     ('TEA Token Distribution', tea_distribution.view()),
     ('SME Signal Boost', boost.view()),
-    active=3,
+    ('Boost Factory', boost_factory.view()),
+    active=4,
 )
 
 
