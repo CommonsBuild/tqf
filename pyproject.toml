@@ -22,6 +22,7 @@ scipy = "^1.11.1"
 pyparsing = "^3.1.1"
 nbdev = "^2.3.12"
 ipython = "^8.15.0"
+networkx = "^3.1"
 
 
 [build-system]

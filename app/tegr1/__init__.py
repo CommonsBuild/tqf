@@ -1,7 +1,9 @@
 import logging
 import threading
 
+import hvplot.networkx as hvnx
 import hvplot.pandas
+import networkx as nx
 import numpy as np
 import pandas as pd
 import panel as pn
@@ -199,6 +201,54 @@ class DonationsDashboard(pm.Parameterized):
         contributions_matrix_view = pn.widgets.Tabulator(contributions_matrix)
         return contributions_matrix_view
 
+    def contributions_network_view(self):
+        df = self.donations.dataset.replace(0, np.nan)
+
+        df['voter'] = df['voter'].astype(str)
+        df['applicationId'] = df['applicationId'].astype(str)
+
+        # Create graph from the dataframe
+        G = nx.from_pandas_edgelist(
+            df, 'voter', 'applicationId', ['amountUSD'], create_using=nx.Graph()
+        )
+
+        # Modify edge width to be the donation size divided by 10
+        for u, v, d in G.edges(data=True):
+            d['amountUSD'] = d['amountUSD'] / 10
+
+        # Set node attributes
+        for node in G.nodes():
+            if node in df['voter'].unique():
+                G.nodes[node]['size'] = df[df['voter'] == node]['amountUSD'].sum()
+                G.nodes[node]['shape'] = 'circle'
+                G.nodes[node]['type'] = 'voter'
+            else:
+                G.nodes[node]['size'] = df[df['applicationId'] == node][
+                    'amountUSD'
+                ].sum()
+                G.nodes[node]['shape'] = 'square'
+                G.nodes[node]['type'] = 'public_good'
+
+        # Visualization
+        plot = hvnx.draw(
+            G,
+            pos=nx.spring_layout(G),
+            node_size='size',
+            node_shape='shape',
+            edge_width='amountUSD',
+            node_label='index',
+            edge_color='amountUSD',
+            cmap='viridis',
+            width=800,
+            height=800,
+            title='Contributors and Public Goods Network',
+            hover_data={'node': ['type', 'size'], 'edge': ['amountUSD']},
+            edge_hover=True,
+        )
+
+        plot.opts(padding=0.1, colorbar=True, legend_position='right')
+        return plot
+
     def donation_groups_view(self):
         df = self.donations.dataset
         plot = df.groupby(['applicationId'])
@@ -210,9 +260,10 @@ class DonationsDashboard(pm.Parameterized):
                 ('Projects', self.projects_view),
                 ('Contributors', self.contributors_view),
                 ('Contributions Matrix', self.contributions_matrix_view),
+                ('Contributions Network', self.contributions_network_view),
                 ('Donor Donation Counts', self.donor_view),
                 ('Sankey', self.sankey_view),
-                active=2,
+                active=3,
             ),
         )
 
