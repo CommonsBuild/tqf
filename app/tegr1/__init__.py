@@ -235,9 +235,12 @@ class DonationsDashboard(pm.Parameterized):
             pos=nx.spring_layout(G),
             node_size='size',
             node_shape='shape',
+            node_color='size',
             edge_width='amountUSD',
             node_label='index',
             edge_color='amountUSD',
+            edge_alpha=0.8,  # Set edge transparency to 0.5
+            node_alpha=0.95,  # Set edge transparency to 0.5
             cmap='viridis',
             width=800,
             height=800,
