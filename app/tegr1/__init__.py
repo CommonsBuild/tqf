@@ -120,17 +120,22 @@ class DonationsDashboard(pm.Parameterized):
         # Calculate Data per Project
         projects = (
             df.groupby('applicationId')
-            .agg(
-                projectId=('projectId', 'first'),
-                donor_count=('voter', 'nunique'),
-                mean_donation=('amountUSD', 'mean'),
-                median_donation=('amountUSD', 'median'),
-                total_donation=('amountUSD', 'sum'),
-                donations=('amountUSD', lambda x: sorted(list(x), reverse=True)),
+            .apply(
+                lambda group: pd.Series(
+                    {
+                        'projectId': group['projectId'].iloc[0],
+                        'donor_count': group['voter'].nunique(),
+                        'mean_donation': group['amountUSD'].mean(),
+                        'median_donation': group['amountUSD'].median(),
+                        'total_donation': group['amountUSD'].sum(),
+                        'max_donation': group['amountUSD'].max(),
+                        'max_doner': group.loc[group['amountUSD'].idxmax(), 'voter'],
+                        'donations': sorted(group['amountUSD'].tolist(), reverse=True),
+                    }
+                )
             )
             .reset_index()
         )
-
         # Format the donations list
         projects['donations'] = projects['donations'].apply(
             lambda donations: ['${:.2f}'.format(n) for n in donations]
@@ -143,6 +148,57 @@ class DonationsDashboard(pm.Parameterized):
         )
         return projects_view
 
+    def contributors_view(self):
+        """
+        Note, the following three terms are conflated: donor, contributor, and voter.
+        """
+        df = self.donations.dataset
+
+        # Calculate Data per Contributor
+        contributors = (
+            df.groupby('voter')
+            .apply(
+                lambda group: pd.Series(
+                    {
+                        'project_count': group['projectId'].nunique(),
+                        'mean_donation': group['amountUSD'].mean(),
+                        'median_donation': group['amountUSD'].median(),
+                        'total_donation': group['amountUSD'].sum(),
+                        'max_donation': group['amountUSD'].max(),
+                        'max_applicationId': group.loc[
+                            group['amountUSD'].idxmax(), 'applicationId'
+                        ],
+                        'donations': sorted(group['amountUSD'].tolist(), reverse=True),
+                    }
+                )
+            )
+            .reset_index()
+        )
+
+        # Format the donations list
+        contributors['donations'] = contributors['donations'].apply(
+            lambda donations: ['${:.2f}'.format(n) for n in donations]
+        )
+
+        # Use tabulator to display the data
+        contributors_view = pn.widgets.Tabulator(
+            contributors,
+            formatters={'donations': {'type': 'textarea', 'textAlign': 'left'}},
+        )
+        return contributors_view
+
+    def contributions_matrix(self):
+        df = self.donations.dataset
+        contributions_matrix = df.pivot_table(
+            index='voter', columns='applicationId', values='amountUSD', aggfunc='sum'
+        )
+        return contributions_matrix
+
+    def contributions_matrix_view(self):
+        contributions_matrix = self.contributions_matrix()
+        contributions_matrix_view = pn.widgets.Tabulator(contributions_matrix)
+        return contributions_matrix_view
+
     def donation_groups_view(self):
         df = self.donations.dataset
         plot = df.groupby(['applicationId'])
@@ -152,9 +208,11 @@ class DonationsDashboard(pm.Parameterized):
             self,
             pn.Tabs(
                 ('Projects', self.projects_view),
+                ('Contributors', self.contributors_view),
+                ('Contributions Matrix', self.contributions_matrix_view),
                 ('Donor Donation Counts', self.donor_view),
                 ('Sankey', self.sankey_view),
-                active=0,
+                active=2,
             ),
         )
 
