@@ -114,10 +114,44 @@ class DonationsDashboard(pm.Parameterized):
         sankey = hv.Sankey(df[['voter', 'projectId', 'amountUSD']])
         return sankey
 
+    def projects_view(self):
+        df = self.donations.dataset
+
+        # Calculate Data per Project
+        projects = (
+            df.groupby('applicationId')
+            .agg(
+                projectId=('projectId', 'first'),
+                donor_count=('voter', 'nunique'),
+                mean_donation=('amountUSD', 'mean'),
+                median_donation=('amountUSD', 'median'),
+                total_donation=('amountUSD', 'sum'),
+                donations=('amountUSD', lambda x: sorted(list(x), reverse=True)),
+            )
+            .reset_index()
+        )
+
+        # Format the donations list
+        projects['donations'] = projects['donations'].apply(
+            lambda donations: ['${:.2f}'.format(n) for n in donations]
+        )
+
+        # Use tabulator to display the data
+        projects_view = pn.widgets.Tabulator(
+            projects,
+            formatters={'donations': {'type': 'textarea', 'textAlign': 'left'}},
+        )
+        return projects_view
+
+    def donation_groups_view(self):
+        df = self.donations.dataset
+        plot = df.groupby(['applicationId'])
+
     def view(self):
         return pn.Column(
             self,
             pn.Tabs(
+                ('Projects', self.projects_view),
                 ('Donor Donation Counts', self.donor_view),
                 ('Sankey', self.sankey_view),
                 active=0,
@@ -397,8 +431,18 @@ class QuadraticFunding(pm.Parameterized):
         precedence=-1,
     )
 
+    def qf(self):
+        """Apply the quadratic algorithm."""
+        qf = self.donations.dataset.groupby('applicationId')['amountUSD'].apply(
+            lambda x: np.square(np.sum(np.sqrt(x)))
+        )
+        return qf
+
+    def qf_view(self):
+        return self.qf().hvplot.bar(title='Quadratic Funding')
+
     def view(self):
-        return pn.Column(self, self.donations.view)
+        return pn.Column(self, self.donations.view, self.qf_view)
 
 
 qf = QuadraticFunding()
