@@ -345,13 +345,28 @@ class BoostFactory(pm.Parameterized):
 
 boost_factory = BoostFactory()
 
+
+class QuadraticFunding(pm.Parameterized):
+
+    donations = pm.Selector(
+        default=donations,
+        objects=[donations],
+    )
+
+    def view(self):
+        return pn.Row(self)
+
+
+qf = QuadraticFunding()
+
 app = pn.Tabs(
     ('Donations', donations.view()),
+    ('Quadradic Funding', qf.view()),
     ('Token Distribution', tec_distribution.view()),
     ('TEA Token Distribution', tea_distribution.view()),
     ('SME Signal Boost', tegr1_tec_boost.view()),
     ('Boost Factory', boost_factory.view()),
-    active=3,
+    active=1,
 )
 
 
