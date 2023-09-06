@@ -143,7 +143,7 @@ class Boost(pm.Parameterized):
         default='Sigmoid',
         objects=['Threshold', 'MinMaxScale', 'NormalScale', 'Sigmoid'],
     )
-    threshold = pm.Number(default=100, precedence=-1, bounds=(0, 10_000), step=1)
+    threshold = pm.Integer(default=100, precedence=-1, bounds=(0, 10_000), step=1)
     k = pm.Number(
         default=10,
         precedence=-1,
@@ -168,15 +168,13 @@ class Boost(pm.Parameterized):
     @pm.depends('input', watch=True)
     def input_signal(self):
         self.signal = self.input.dataset['balance']
+        # Clip and set to bounds according to signal values
+        # lower, upper = (1, min(self.param.threshold.bounds[1], int(self.signal.max())))
+        # self.threshold = min(max(self.threshold, lower), upper)
+        # self.param.threshold.softbounds = (lower, upper)
 
     @pm.depends('signal', 'logy', 'threshold', 'k', 'b', watch=True)
     def update_distribution(self):
-        # if self.logy:
-        #     signal = np.log(self.signal + 1)
-        #     threshold = np.log(self.threshold)
-        # else:
-        #     signal = self.signal
-        #     threshold = self.threshold
         signal = self.signal
         threshold = self.threshold
 
