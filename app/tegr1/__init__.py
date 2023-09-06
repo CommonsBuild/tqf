@@ -127,7 +127,10 @@ from bokeh.models import NumeralTickFormatter
 
 
 class Boost(pm.Parameterized):
-    logy = pm.Boolean(False)
+    token_logy = pm.Boolean(
+        False,
+        doc='This parameter changes the token distribution view. It does not effect functionality.',
+    )
     input = pm.Selector(
         default=tec_distribution,
         objects=[tec_distribution, tea_distribution],
@@ -143,6 +146,7 @@ class Boost(pm.Parameterized):
         default='Sigmoid',
         objects=['Threshold', 'MinMaxScale', 'NormalScale', 'Sigmoid'],
     )
+    boost_factor = pm.Number(1, bounds=(0.1, 10), step=0.1)
     threshold = pm.Integer(default=100, precedence=-1, bounds=(0, 10_000), step=1)
     k = pm.Number(
         default=10,
@@ -173,22 +177,26 @@ class Boost(pm.Parameterized):
         # self.threshold = min(max(self.threshold, lower), upper)
         # self.param.threshold.softbounds = (lower, upper)
 
-    @pm.depends('signal', 'logy', 'threshold', 'k', 'b', watch=True)
+    @pm.depends(
+        'signal', 'token_logy', 'threshold', 'k', 'b', 'boost_factor', watch=True
+    )
     def update_distribution(self):
         signal = self.signal
         threshold = self.threshold
 
         with pm.edit_constant(self):
-            if self.transformation == 'Threshold':
-                self.distribution = self._threshold(signal, threshold)
-            elif self.transformation == 'Sigmoid':
-                self.distribution = self._sigmoid_scale(signal, k=self.k, b=self.b)
-            elif self.transformation == 'MinMaxScale':
-                self.distribution = self._min_max_scale(signal)
-            elif self.transformation == 'NormalScale':
-                self.distribution = self._normal_scale(signal)
-            else:
-                raise (Exception(f'Unkown Transformation: {self.transformation}'))
+            with pm.parameterized.batch_call_watchers(self):
+                if self.transformation == 'Threshold':
+                    self.distribution = self._threshold(signal, threshold)
+                elif self.transformation == 'Sigmoid':
+                    self.distribution = self._sigmoid_scale(signal, k=self.k, b=self.b)
+                elif self.transformation == 'MinMaxScale':
+                    self.distribution = self._min_max_scale(signal)
+                elif self.transformation == 'NormalScale':
+                    self.distribution = self._normal_scale(signal)
+                else:
+                    raise (Exception(f'Unkown Transformation: {self.transformation}'))
+                self.distribution = self.boost_factor * self.distribution
 
     @pm.depends('transformation', watch=True)
     def show_transformation_params(self):
@@ -244,7 +252,7 @@ class Boost(pm.Parameterized):
         distribution_view = (
             self.distribution.sort_values(ascending=False)
             .reset_index(drop=True)
-            .hvplot.step(ylim=(-0.01, 1.01), title='Boost Factor')
+            .hvplot.step(ylim=(-0.01, self.boost_factor + 0.01), title='Boost Factor')
             .opts(shared_axes=False, yformatter=NumeralTickFormatter(format='0.00'))
         )
         return distribution_view
@@ -253,7 +261,7 @@ class Boost(pm.Parameterized):
         signal_view = (
             self.signal.sort_values(ascending=False)
             .reset_index(drop=True)
-            .hvplot.step(logy=self.logy, title='Token Balance')
+            .hvplot.step(logy=self.token_logy, title='Token Balance')
             .opts(shared_axes=False, yformatter=NumeralTickFormatter(format='0.a'))
         )
         return signal_view
@@ -265,13 +273,25 @@ class Boost(pm.Parameterized):
         if self.transformation == 'Sigmoid':
             explanation = f"""
                 Sigmoid curve with steepness {self.k:.2f} and shift {self.b:.2f}.
-                $$ f(x) = \\frac{{1}}{{1 + e^{{-k(x + b)}}}} $$
+                The sigmoid function is defined as:  
+                $$ f(x) = \\frac{{1}}{{1 + e^{{-{self.k:.2f} \(x + {self.b:.2f}\)}}}} $$
                 """
 
             return pn.pane.Markdown(explanation)
 
         if self.transformation == 'MinMaxScale':
-            return pn.pane.Markdown(f'Scale the distribution by min and max values.')
+            explanation = f"""
+                Scale the distribution by min and max values.
+                $$ f(x) = \\frac{{x - min(x)}}{{max(x) - min(x)}} $$
+                """
+            return pn.pane.Markdown(explanation)
+
+        if self.transformation == 'NormalScale':
+            explanation = f"""
+                Scale the distribution by mean and standard deviation.'
+                $$ f(x) = \\frac{{x - mean(x)}}{{std(x)}} + 0.5 $$
+                """
+            return pn.pane.Markdown(explanation)
 
     def view(self):
         return pn.Row(
@@ -285,6 +305,7 @@ tegr1_tec_boost = Boost(
     transformation='Threshold',
     threshold=10,
     input=tec_distribution,
+    token_logy=True,
 )
 
 tegr1_tea_boost = Boost(
