@@ -81,8 +81,29 @@ class Donations(Dataset):
         default=None, columns={'voter', 'amountUSD'}, label='Donations Dataset'
     )
 
-
 donations = Donations()
+import holoviews as hv
+
+
+class DonationsDashboard(pm.Parameterized):
+    donations = pm.Selector(default=donations, objects=[donations], precedence=-1)
+
+    def donor_view(self):
+        df = self.donations.dataset
+        donor_vote_counts = df.groupby('voter').count()['id'].to_frame(name='number_of_donations')
+        histogram = donor_vote_counts.hvplot.hist(ylabel='Donor Count', xlabel='Number of Projects Donated To', title="Number of Donations per Donor Histogram", height=320)
+        table = donor_vote_counts.groupby('number_of_donations').size().reset_index(name='unique donor count').sort_values('number_of_donations').hvplot.table(height=320)
+        return pn.Row(histogram, table)
+
+    def sankey_view(self):
+        df = self.donations.dataset
+        sankey = hv.Sankey(df[['voter', 'projectId', 'amountUSD']])
+        return sankey
+
+    def view(self):
+        return pn.Column(self, pn.Tabs(('Donor Donation Counts', self.donor_view), ('Sankey', self.sankey_view),active=0))
+
+donations_dashboard = DonationsDashboard()
 
 
 class TokenDistribution(Dataset):
@@ -351,22 +372,23 @@ class QuadraticFunding(pm.Parameterized):
     donations = pm.Selector(
         default=donations,
         objects=[donations],
+        precedence=-1,
     )
 
     def view(self):
-        return pn.Row(self)
+        return pn.Column(self, self.donations.view)
 
 
 qf = QuadraticFunding()
 
 app = pn.Tabs(
-    ('Donations', donations.view()),
+    ('Donations', pn.Column(donations.view(), donations_dashboard.view())),
     ('Quadradic Funding', qf.view()),
     ('Token Distribution', tec_distribution.view()),
     ('TEA Token Distribution', tea_distribution.view()),
     ('SME Signal Boost', tegr1_tec_boost.view()),
     ('Boost Factory', boost_factory.view()),
-    active=1,
+    active=0,
 )
 
 
