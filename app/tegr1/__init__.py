@@ -81,6 +81,7 @@ class Donations(Dataset):
         default=None, columns={'voter', 'amountUSD'}, label='Donations Dataset'
     )
 
+
 donations = Donations()
 import holoviews as hv
 
@@ -90,9 +91,22 @@ class DonationsDashboard(pm.Parameterized):
 
     def donor_view(self):
         df = self.donations.dataset
-        donor_vote_counts = df.groupby('voter').count()['id'].to_frame(name='number_of_donations')
-        histogram = donor_vote_counts.hvplot.hist(ylabel='Donor Count', xlabel='Number of Projects Donated To', title="Number of Donations per Donor Histogram", height=320)
-        table = donor_vote_counts.groupby('number_of_donations').size().reset_index(name='unique donor count').sort_values('number_of_donations').hvplot.table(height=320)
+        donor_vote_counts = (
+            df.groupby('voter').count()['id'].to_frame(name='number_of_donations')
+        )
+        histogram = donor_vote_counts.hvplot.hist(
+            ylabel='Donor Count',
+            xlabel='Number of Projects Donated To',
+            title='Number of Donations per Donor Histogram',
+            height=320,
+        )
+        table = (
+            donor_vote_counts.groupby('number_of_donations')
+            .size()
+            .reset_index(name='unique donor count')
+            .sort_values('number_of_donations')
+            .hvplot.table(height=320)
+        )
         return pn.Row(histogram, table)
 
     def sankey_view(self):
@@ -101,7 +115,15 @@ class DonationsDashboard(pm.Parameterized):
         return sankey
 
     def view(self):
-        return pn.Column(self, pn.Tabs(('Donor Donation Counts', self.donor_view), ('Sankey', self.sankey_view),active=0))
+        return pn.Column(
+            self,
+            pn.Tabs(
+                ('Donor Donation Counts', self.donor_view),
+                ('Sankey', self.sankey_view),
+                active=0,
+            ),
+        )
+
 
 donations_dashboard = DonationsDashboard()
 
