@@ -1,4 +1,5 @@
 import logging
+import threading
 
 import hvplot.pandas
 import numpy as np
@@ -6,6 +7,18 @@ import pandas as pd
 import panel as pn
 import param as pm
 from icecream import ic
+from IPython import start_ipython
+
+pn.extension('mathjax')
+
+# Use the following to initialize ipython when serving the app:
+# def start_ipython_in_thread(namespace):
+#     start_ipython(argv=[], user_ns=namespace)
+#
+#
+# # Pass the main thread's namespace to the IPython instance
+# ipython_thread = threading.Thread(target=start_ipython_in_thread, args=(globals(),))
+# ipython_thread.start()
 
 
 def exception_handler(ex):
@@ -114,6 +127,7 @@ from bokeh.models import NumeralTickFormatter
 
 
 class Boost(pm.Parameterized):
+    logy = pm.Boolean(False)
     input = pm.Selector(
         default=tec_distribution,
         objects=[tec_distribution, tea_distribution],
@@ -125,13 +139,26 @@ class Boost(pm.Parameterized):
     distribution = pm.Series(
         constant=True, precedence=-1, doc='The resulting distribution.'
     )
-    logy = pm.Boolean(False)
     transformation = pm.Selector(
-        default='Sigmoid', objects=['Threshold', 'Linear', 'Sigmoid']
+        default='Sigmoid',
+        objects=['Threshold', 'MinMaxScale', 'NormalScale', 'Sigmoid'],
     )
-    threshold = pm.Number(100, precedence=-1, bounds=(0, 10_000), step=1)
-    sigmoid_frequency = pm.Number(1, precedence=-1, bounds=(0.1, 5))
-    sigmoid_shift = pm.Number(0, precedence=-1, bounds=(-5, 5))
+    threshold = pm.Number(default=100, precedence=-1, bounds=(0, 10_000), step=1)
+    k = pm.Number(
+        default=10,
+        precedence=-1,
+        bounds=(1, 20),
+        doc='Steepness of the sigmoid curve',
+        label='Steepness',
+    )
+    b = pm.Number(
+        default=-0.2,
+        precedence=-1,
+        bounds=(-0.5, 0.5),
+        doc='Shift of the sigmoid curve',
+        label='Shift',
+        step=0.01,
+    )
 
     def __init__(self, **params):
         super().__init__(**params)
@@ -142,26 +169,26 @@ class Boost(pm.Parameterized):
     def input_signal(self):
         self.signal = self.input.dataset['balance']
 
-    @pm.depends(
-        'signal', 'logy', 'threshold', 'sigmoid_frequency', 'sigmoid_shift', watch=True
-    )
+    @pm.depends('signal', 'logy', 'threshold', 'k', 'b', watch=True)
     def update_distribution(self):
-        if self.logy:
-            signal = np.log(self.signal + 1)
-            threshold = np.log(self.threshold)
-        else:
-            signal = self.signal
-            threshold = self.threshold
+        # if self.logy:
+        #     signal = np.log(self.signal + 1)
+        #     threshold = np.log(self.threshold)
+        # else:
+        #     signal = self.signal
+        #     threshold = self.threshold
+        signal = self.signal
+        threshold = self.threshold
 
         with pm.edit_constant(self):
             if self.transformation == 'Threshold':
                 self.distribution = self._threshold(signal, threshold)
             elif self.transformation == 'Sigmoid':
-                self.distribution = self._sigmoid_scale(
-                    signal, k=self.sigmoid_frequency, b=self.sigmoid_shift
-                )
-            elif self.transformation == 'Linear':
+                self.distribution = self._sigmoid_scale(signal, k=self.k, b=self.b)
+            elif self.transformation == 'MinMaxScale':
                 self.distribution = self._min_max_scale(signal)
+            elif self.transformation == 'NormalScale':
+                self.distribution = self._normal_scale(signal)
             else:
                 raise (Exception(f'Unkown Transformation: {self.transformation}'))
 
@@ -173,26 +200,32 @@ class Boost(pm.Parameterized):
         with pm.parameterized.batch_call_watchers(self):
             # Set all function parameters to not visible
             self.param['threshold'].precedence = -1
-            self.param['sigmoid_frequency'].precedence = -1
-            self.param['sigmoid_shift'].precedence = -1
-            # self.param['logy'].precedence = -1
+            self.param['k'].precedence = -1
+            self.param['b'].precedence = -1
 
             if self.transformation == 'Threshold':
                 self.param['threshold'].precedence = 1
 
             if self.transformation == 'Sigmoid':
-                self.param['logy'].precedence = 1
-                self.param['sigmoid_frequency'].precedence = 1
-                self.param['sigmoid_shift'].precedence = 1
+                self.param['k'].precedence = 1
+                self.param['b'].precedence = 1
 
-            if self.transformation == 'Linear':
-                self.param['logy'].precedence = 1
+            if self.transformation == 'MinMaxScale':
+                pass
 
         self.update_distribution()
 
     @staticmethod
     def _sigmoid(x, A=1, k=1, b=0):
-        return A / (1 + np.exp(-k * (x - b)))
+        """
+        Parameters
+        ----------
+        x : The input value(s) for which the sigmoid function should be computed.
+        A : The maximum value of the sigmoid curve.
+        k : The steepness of the sigmoid curve.
+        b : The x-axis shift of the sigmoid curve.
+        """
+        return A / (1 + np.exp(-k * (x + b)))
 
     @staticmethod
     def _min_max_scale(signal):
@@ -203,13 +236,11 @@ class Boost(pm.Parameterized):
         return (signal >= t).astype(int)
 
     @staticmethod
-    def _mean_std_scale(signal):
-        return (signal - signal.mean()) / signal.std()
+    def _normal_scale(signal):
+        return ((signal - signal.mean()) / signal.std() + 0.5).clip(lower=0, upper=1)
 
     def _sigmoid_scale(self, signal, **params):
-        return self._min_max_scale(
-            self._sigmoid(self._mean_std_scale(signal), **params)
-        )
+        return self._sigmoid(self._normal_scale(signal), **params)
 
     def view_distribution(self):
         distribution_view = (
@@ -229,8 +260,26 @@ class Boost(pm.Parameterized):
         )
         return signal_view
 
+    def view_explainer(self):
+        if self.transformation == 'Threshold':
+            return pn.pane.Markdown(f'The threshold is set to {self.threshold}.')
+
+        if self.transformation == 'Sigmoid':
+            explanation = f"""
+                Sigmoid curve with steepness {self.k:.2f} and shift {self.b:.2f}.
+                $$ f(x) = \\frac{{1}}{{1 + e^{{-k(x + b)}}}} $$
+                """
+
+            return pn.pane.Markdown(explanation)
+
+        if self.transformation == 'MinMaxScale':
+            return pn.pane.Markdown(f'Scale the distribution by min and max values.')
+
     def view(self):
-        return pn.Row(self, pn.Column(self.view_signal, self.view_distribution))
+        return pn.Row(
+            pn.Column(self, self.view_explainer),
+            pn.Column(self.view_signal, self.view_distribution),
+        )
 
 
 tegr1_tec_boost = Boost(
