@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import panel as pn
 import param as pm
+from bokeh.models import HoverTool
 from icecream import ic
 from IPython import start_ipython
 
@@ -67,6 +68,7 @@ class Dataset(pm.Parameterized):
                         'page_size': self.page_size,
                         'pagination': 'remote',
                         'header_filters': True,
+                        'sizing_mode': 'stretch_width',
                     },
                 },
             )
@@ -209,47 +211,70 @@ class DonationsDashboard(pm.Parameterized):
 
         # Create graph from the dataframe
         G = nx.from_pandas_edgelist(
-            df, 'voter', 'applicationId', ['amountUSD'], create_using=nx.Graph()
+            df,
+            'voter',
+            'applicationId',
+            ['amountUSD'],
+            create_using=nx.Graph(),
         )
 
         # Modify edge width to be the donation size divided by 10
         for u, v, d in G.edges(data=True):
-            d['amountUSD'] = d['amountUSD'] / 10
+            d['amountUSD'] = d['amountUSD'] / 40
 
         # Set node attributes
         for node in G.nodes():
             if node in df['voter'].unique():
                 G.nodes[node]['size'] = df[df['voter'] == node]['amountUSD'].sum()
+                G.nodes[node]['id'] = node
                 G.nodes[node]['shape'] = 'circle'
                 G.nodes[node]['type'] = 'voter'
+                G.nodes[node]['outline_color'] = 'blue'  # Outline color for voters
             else:
                 G.nodes[node]['size'] = df[df['applicationId'] == node][
                     'amountUSD'
                 ].sum()
-                G.nodes[node]['shape'] = 'square'
+                G.nodes[node]['id'] = node
+                G.nodes[node]['shape'] = 'triangle'
                 G.nodes[node]['type'] = 'public_good'
+                G.nodes[node]['outline_color'] = 'red'  # Outline color for voters
+
+        tooltips = [
+            ('Id', '@id'),
+            ('Total Donations', '$@size{0,0.00}'),
+            ('Type', '@type'),
+        ]
+        hover = HoverTool(tooltips=tooltips)
 
         # Visualization
         plot = hvnx.draw(
             G,
-            pos=nx.spring_layout(G),
+            pos=nx.spring_layout(G, seed=69),
             node_size='size',
             node_shape='shape',
             node_color='size',
             edge_width='amountUSD',
             node_label='index',
+            node_line_color='outline_color',
+            node_line_width=2,
             edge_color='amountUSD',
-            edge_alpha=0.8,  # Set edge transparency to 0.5
-            node_alpha=0.95,  # Set edge transparency to 0.5
+            edge_alpha=0.8,
+            node_alpha=0.95,
             cmap='viridis',
             width=800,
             height=800,
             title='Contributors and Public Goods Network',
-            hover_data={'node': ['type', 'size'], 'edge': ['amountUSD']},
-            edge_hover=True,
         )
 
-        plot.opts(padding=0.1, colorbar=True, legend_position='right')
+        plot.opts(
+            hv.opts.Graph(
+                padding=0.1,
+                colorbar=True,
+                legend_position='right',
+                tools=[hover, 'tap'],
+            ),
+            hv.opts.Nodes(line_color='outline_color', line_width=5, tools=[hover]),
+        )
         return plot
 
     def donation_groups_view(self):
@@ -264,9 +289,10 @@ class DonationsDashboard(pm.Parameterized):
                 ('Contributors', self.contributors_view),
                 ('Contributions Matrix', self.contributions_matrix_view),
                 ('Contributions Network', self.contributions_network_view),
-                ('Donor Donation Counts', self.donor_view),
-                ('Sankey', self.sankey_view),
+                # ('Donor Donation Counts', self.donor_view),
+                # ('Sankey', self.sankey_view),
                 active=3,
+                dynamic=True,
             ),
         )
 
@@ -523,7 +549,7 @@ class BoostFactory(pm.Parameterized):
             self.boosts.pop()
             self.param.trigger('boosts')
 
-    @pm.depends('boosts', watch=True)
+    @pm.depends('boosts')
     def boosts_view(self):
         return pn.Column(*[boost.view for boost in self.boosts])
 
@@ -567,6 +593,7 @@ app = pn.Tabs(
     ('SME Signal Boost', tegr1_tec_boost.view()),
     ('Boost Factory', boost_factory.view()),
     active=0,
+    dynamic=True,
 )
 
 
