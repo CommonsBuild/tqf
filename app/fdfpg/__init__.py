@@ -188,11 +188,10 @@ population_function_generator = PopulationFunctionGenerator(
     value_function_generator=ConcaveFunctionGenerator,
 )
 
-app = population_function_generator.view()
+app = pn.Tabs((('Value Functions', population_function_generator.view())))
 
 
 if __name__ == '__main__':
     print(society)
     print(concave_gen)
     print(population_function_generator)
-    print('here')
