@@ -1,0 +1,217 @@
+import holoviews as hv
+import hvplot.networkx as hvnx
+import networkx as nx
+import numpy as np
+import pandas as pd
+import panel as pn
+import param as pm
+from bokeh.models import HoverTool
+
+pn.extension('tabulator')
+
+
+class DonationsDashboard(pm.Parameterized):
+    donations = pm.Selector(precedence=-1)
+
+    def donor_view(self):
+        df = self.donations.dataset
+        donor_vote_counts = (
+            df.groupby('voter').count()['id'].to_frame(name='number_of_donations')
+        )
+        histogram = donor_vote_counts.hvplot.hist(
+            ylabel='Donor Count',
+            xlabel='Number of Projects Donated To',
+            title='Number of Donations per Donor Histogram',
+            height=320,
+        )
+        table = (
+            donor_vote_counts.groupby('number_of_donations')
+            .size()
+            .reset_index(name='unique donor count')
+            .sort_values('number_of_donations')
+            .hvplot.table(height=320)
+        )
+        return pn.Row(histogram, table)
+
+    def sankey_view(self):
+        df = self.donations.dataset
+        sankey = hv.Sankey(df[['voter', 'projectId', 'amountUSD']])
+        return sankey
+
+    def projects_view(self):
+        df = self.donations.dataset
+
+        # Calculate Data per Project
+        projects = (
+            df.groupby('applicationId')
+            .apply(
+                lambda group: pd.Series(
+                    {
+                        'projectId': group['projectId'].iloc[0],
+                        'donor_count': group['voter'].nunique(),
+                        'mean_donation': group['amountUSD'].mean(),
+                        'median_donation': group['amountUSD'].median(),
+                        'total_donation': group['amountUSD'].sum(),
+                        'max_donation': group['amountUSD'].max(),
+                        'max_doner': group.loc[group['amountUSD'].idxmax(), 'voter'],
+                        'donations': sorted(group['amountUSD'].tolist(), reverse=True),
+                    }
+                )
+            )
+            .reset_index()
+        )
+        # Format the donations list
+        projects['donations'] = projects['donations'].apply(
+            lambda donations: ['${:.2f}'.format(n) for n in donations]
+        )
+
+        # Use tabulator to display the data
+        projects_view = pn.widgets.Tabulator(
+            projects,
+            formatters={'donations': {'type': 'textarea', 'textAlign': 'left'}},
+        )
+        return projects_view
+
+    def contributors_view(self):
+        """
+        Note, the following three terms are conflated: donor, contributor, and voter.
+        """
+        df = self.donations.dataset
+
+        # Calculate Data per Contributor
+        contributors = (
+            df.groupby('voter')
+            .apply(
+                lambda group: pd.Series(
+                    {
+                        'project_count': group['projectId'].nunique(),
+                        'mean_donation': group['amountUSD'].mean(),
+                        'median_donation': group['amountUSD'].median(),
+                        'total_donation': group['amountUSD'].sum(),
+                        'max_donation': group['amountUSD'].max(),
+                        'max_applicationId': group.loc[
+                            group['amountUSD'].idxmax(), 'applicationId'
+                        ],
+                        'donations': sorted(group['amountUSD'].tolist(), reverse=True),
+                    }
+                )
+            )
+            .reset_index()
+        )
+
+        # Format the donations list
+        contributors['donations'] = contributors['donations'].apply(
+            lambda donations: ['${:.2f}'.format(n) for n in donations]
+        )
+
+        # Use tabulator to display the data
+        contributors_view = pn.widgets.Tabulator(
+            contributors,
+            formatters={'donations': {'type': 'textarea', 'textAlign': 'left'}},
+        )
+        return contributors_view
+
+    def contributions_matrix(self):
+        df = self.donations.dataset
+        contributions_matrix = df.pivot_table(
+            index='voter', columns='applicationId', values='amountUSD', aggfunc='sum'
+        )
+        return contributions_matrix
+
+    def contributions_matrix_view(self):
+        contributions_matrix = self.contributions_matrix()
+        contributions_matrix_view = pn.widgets.Tabulator(contributions_matrix)
+        return contributions_matrix_view
+
+    def contributions_network_view(self):
+        df = self.donations.dataset.replace(0, np.nan)
+
+        df['voter'] = df['voter'].astype(str)
+        df['applicationId'] = df['applicationId'].astype(str)
+
+        # Create graph from the dataframe
+        G = nx.from_pandas_edgelist(
+            df,
+            'voter',
+            'applicationId',
+            ['amountUSD'],
+            create_using=nx.Graph(),
+        )
+
+        # Modify edge width to be the donation size divided by 10
+        for u, v, d in G.edges(data=True):
+            d['amountUSD'] = d['amountUSD'] / 40
+
+        # Set node attributes
+        for node in G.nodes():
+            if node in df['voter'].unique():
+                G.nodes[node]['size'] = df[df['voter'] == node]['amountUSD'].sum()
+                G.nodes[node]['id'] = node
+                G.nodes[node]['shape'] = 'circle'
+                G.nodes[node]['type'] = 'voter'
+                G.nodes[node]['outline_color'] = 'blue'  # Outline color for voters
+            else:
+                G.nodes[node]['size'] = df[df['applicationId'] == node][
+                    'amountUSD'
+                ].sum()
+                G.nodes[node]['id'] = node
+                G.nodes[node]['shape'] = 'triangle'
+                G.nodes[node]['type'] = 'public_good'
+                G.nodes[node]['outline_color'] = 'red'  # Outline color for voters
+
+        tooltips = [
+            ('Id', '@id'),
+            ('Total Donations', '$@size{0,0.00}'),
+            ('Type', '@type'),
+        ]
+        hover = HoverTool(tooltips=tooltips)
+
+        # Visualization
+        plot = hvnx.draw(
+            G,
+            pos=nx.spring_layout(G, seed=69),
+            node_size='size',
+            node_shape='shape',
+            node_color='size',
+            edge_width='amountUSD',
+            node_label='index',
+            node_line_color='outline_color',
+            node_line_width=2,
+            edge_color='amountUSD',
+            edge_alpha=0.8,
+            node_alpha=0.95,
+            cmap='viridis',
+            width=800,
+            height=800,
+            title='Contributors and Public Goods Network',
+        )
+
+        plot.opts(
+            hv.opts.Graph(
+                padding=0.1,
+                colorbar=True,
+                legend_position='right',
+                tools=[hover, 'tap'],
+            ),
+            hv.opts.Nodes(line_color='outline_color', line_width=5, tools=[hover]),
+        )
+        return plot
+
+    def donation_groups_view(self):
+        df = self.donations.dataset
+        plot = df.groupby(['applicationId'])
+
+    def view(self):
+        return pn.Column(
+            self,
+            pn.Tabs(
+                ('Projects', self.projects_view),
+                ('Contributors', self.contributors_view),
+                ('Contributions Matrix', self.contributions_matrix_view),
+                ('Contributions Network', self.contributions_network_view),
+                # ('Donor Donation Counts', self.donor_view),
+                # ('Sankey', self.sankey_view),
+                active=3,
+                dynamic=True,
+            ),
+        )
