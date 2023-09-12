@@ -3,6 +3,8 @@ import panel as pn
 import param as pm
 from bokeh.models import NumeralTickFormatter
 
+pn.extension('mathjax')
+
 
 class Boost(pm.Parameterized):
     token_logy = pm.Boolean(

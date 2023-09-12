@@ -1,5 +1,4 @@
 import hvplot.pandas  # noqa
-import numpy as np
 import panel as pn
 import param as pm
 

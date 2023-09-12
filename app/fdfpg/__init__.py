@@ -1,4 +1,4 @@
-import hvplot.pandas
+import hvplot.pandas  # noqa
 import numbergen as ng
 import numpy as np
 import pandas as pd
