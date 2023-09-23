@@ -19,6 +19,7 @@ tea_distribution = TEA()
 
 
 tegr1_tec_boost = Boost(
+    name='tegr1_tec_boost',
     input=tec_distribution,
     transformation='Threshold',
     threshold=10,
@@ -27,6 +28,7 @@ tegr1_tec_boost = Boost(
 tegr1_tec_boost.param['input'].objects = [tec_distribution, tea_distribution]
 
 tegr1_tea_boost = Boost(
+    name='tegr1_tea_boost',
     input=tea_distribution,
     transformation='Threshold',
     threshold=1,
@@ -46,7 +48,7 @@ app = pn.Tabs(
     ('TEA Token Distribution', tea_distribution.view()),
     ('SME Signal Boost', tegr1_tec_boost.view()),
     ('Boost Factory', boost_factory.view()),
-    active=0,
+    active=4,
     dynamic=True,
 )
 

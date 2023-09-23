@@ -23,6 +23,8 @@ pyparsing = "^3.1.1"
 nbdev = "^2.3.12"
 ipython = "^8.15.0"
 networkx = "^3.1"
+xarray = "^2023.8.0"
+datashader = "^0.15.2"
 
 
 [build-system]

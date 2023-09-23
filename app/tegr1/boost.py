@@ -1,8 +1,11 @@
+import datashader as ds
+import holoviews as hv
 import numpy as np
 import pandas as pd
 import panel as pn
 import param as pm
-from bokeh.models import NumeralTickFormatter
+from bokeh.models import BasicTicker, LogTicker, NumeralTickFormatter
+from holoviews.operation.datashader import datashade, dynspread, shade
 
 pn.extension('mathjax')
 
@@ -131,7 +134,12 @@ class Boost(pm.Parameterized):
             self.distribution.sort_values(ascending=False)
             .reset_index(drop=True)
             .hvplot.step(ylim=(-0.01, self.boost_factor + 0.01), title='Boost Factor')
-            .opts(shared_axes=False, yformatter=NumeralTickFormatter(format='0.00'))
+            .opts(
+                shared_axes=False,
+                yformatter=NumeralTickFormatter(format='0.00'),
+                width=650,
+                height=320,
+            )
         )
         return distribution_view
 
@@ -140,7 +148,12 @@ class Boost(pm.Parameterized):
             self.signal.sort_values(ascending=False)
             .reset_index(drop=True)
             .hvplot.step(logy=self.token_logy, title='Token Balance')
-            .opts(shared_axes=False, yformatter=NumeralTickFormatter(format='0.a'))
+            .opts(
+                shared_axes=False,
+                yformatter=NumeralTickFormatter(format='0.a'),
+                width=650,
+                height=320,
+            )
         )
         return signal_view
 
@@ -171,8 +184,78 @@ class Boost(pm.Parameterized):
                 """
             return pn.pane.Markdown(explanation)
 
+    def view_boost(self):
+        # Convert signal and distribution to DataFrames
+        signal_df = self.signal.sort_values(ascending=False).reset_index(name='signal')
+        distribution_df = self.distribution.sort_values(ascending=False).reset_index(
+            name='distribution'
+        )
+
+        # Merge the two DataFrames on the index
+        merged_df = pd.merge(signal_df, distribution_df, on='index')
+
+        # If token_logy is True, transform the signal to a logarithmic scale
+        if self.token_logy:
+            # Replace 0 and negative values with a small positive value
+            merged_df['signal'] = merged_df['signal'].replace(0, 1e-10)
+            merged_df['signal'] = np.where(
+                merged_df['signal'] <= 0, 1e-10, merged_df['signal']
+            )
+
+            # Apply the logarithmic transformation
+            merged_df['signal'] = np.log1p(merged_df['signal'])
+
+            # Scale the signal values
+            min_val = self.signal.min()
+            max_val = self.signal.max()
+            merged_df['signal'] = (merged_df['signal'] - merged_df['signal'].min()) / (
+                merged_df['signal'].max() - merged_df['signal'].min()
+            ) * (max_val - min_val) + min_val
+
+        # Create an Area plot for the signal and distribution
+        signal_view = (
+            hv.Area(merged_df, 'index', ['signal', 'distribution'])
+            .redim.range(signal=(0.01, None))
+            .opts(
+                yformatter=NumeralTickFormatter(format='0.a'),
+                width=650,
+                height=320,
+                logy=True,
+            )
+        )
+
+        # Use datashade to shade the area plot based on the distribution values
+        shaded_signal = datashade(signal_view, aggregator=ds.mean('distribution'))
+
+        # Apply the desired options to the plot
+        shaded_signal = shaded_signal.opts(
+            title='Token Balance Boost Factor',
+            shared_axes=False,
+            yformatter=NumeralTickFormatter(format='0.a'),
+            width=650,
+            height=320,
+            labelled=[],
+        )
+
+        # If token_logy is True, adjust the y-axis ticks to display the original values
+        if self.token_logy:
+            merged_df['signal'] = merged_df['signal'].clip(lower=1e-10)
+            min_val = max(1e-10, self.signal.min())
+            max_val = self.signal.max()
+            ticks = [
+                10**i
+                for i in range(int(np.log10(min_val)), int(np.log10(max_val)) + 1)
+            ]
+            yticks = [(tick, str(tick)) for tick in ticks]
+            shaded_signal = shaded_signal.options(yticks=yticks, logy=True)
+        return shaded_signal
+
     def view(self):
         return pn.Row(
             pn.Column(self, self.view_explainer),
-            pn.Column(self.view_signal, self.view_distribution),
+            pn.Column(
+                self.view_signal,
+                self.view_distribution,
+                # self.view_boost,
+            ),
         )
