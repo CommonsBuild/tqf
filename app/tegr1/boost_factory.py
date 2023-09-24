@@ -20,7 +20,16 @@ class BoostFactory(pm.Parameterized):
             self.param.trigger('boosts')
 
     def boosts_view(self):
-        return pn.Column(*[boost.view for boost in self.boosts])
+        return pn.Column(*[boost.view_panel for boost in self.boosts])
+
+    def collect_boosts(self):
+        for boost in self.boosts:
+            signal = boost.signal
+            distribution = boost.distribution
+            input = boost.input
+            return pn.Tabs(
+                ('Signal', signal), ('Distribution', distribution), ('input', input)
+            )
 
     def view(self):
-        return pn.Row(self, self.boosts_view)
+        return pn.Row(self, self.boosts_view, self.collect_boosts)

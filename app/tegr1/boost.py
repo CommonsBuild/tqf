@@ -53,10 +53,6 @@ class Boost(pm.Parameterized):
     @pm.depends('input', watch=True)
     def input_signal(self):
         self.signal = self.input.dataset['balance']
-        # Clip and set to bounds according to signal values
-        # lower, upper = (1, min(self.param.threshold.bounds[1], int(self.signal.max())))
-        # self.threshold = min(max(self.threshold, lower), upper)
-        # self.param.threshold.softbounds = (lower, upper)
 
     @pm.depends(
         'signal', 'token_logy', 'threshold', 'k', 'b', 'boost_factor', watch=True
@@ -250,7 +246,12 @@ class Boost(pm.Parameterized):
             shaded_signal = shaded_signal.options(yticks=yticks, logy=True)
         return shaded_signal
 
-    def view(self):
+    def output(self):
+        df = self.input.dataset[['address', 'balance']].copy(deep=True)
+        df['Boost'] = self.distribution
+        return df
+
+    def view_panel(self):
         return pn.Row(
             pn.Column(self, self.view_explainer),
             pn.Column(
@@ -259,3 +260,11 @@ class Boost(pm.Parameterized):
                 # self.view_boost,
             ),
         )
+
+    def view_output(self):
+        return pn.Row(
+            self.output,
+        )
+
+    def view(self):
+        return self.view_panel() + self.view_output()
