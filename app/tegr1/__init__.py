@@ -38,7 +38,6 @@ tegr1_tea_boost.param['input'].objects = [tea_distribution, tea_distribution]
 
 boost_factory = BoostFactory(template=tegr1_tec_boost)
 boost_factory.param['template'].objects = [tegr1_tec_boost, tegr1_tea_boost]
-boost_factory._new_boost()
 
 qf = QuadraticFunding(donations=donations)
 
@@ -53,6 +52,7 @@ app = pn.Tabs(
     dynamic=True,
 )
 
+boost_factory._new_boost()
 
 if __name__ == '__main__':
     print(donations)

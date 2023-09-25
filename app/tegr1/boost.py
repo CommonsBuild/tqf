@@ -25,12 +25,19 @@ class Boost(pm.Parameterized):
     )
     transformation = pm.Selector(
         default='Sigmoid',
-        objects=['Threshold', 'MinMaxScale', 'NormalScale', 'Sigmoid'],
+        objects=[
+            'Threshold',
+            'MinMaxScale',
+            'LogMinMaxScale',
+            'NormalScale',
+            'LogNormalScale',
+            'Sigmoid',
+        ],
     )
     boost_factor = pm.Number(1, bounds=(0.1, 10), step=0.1)
     threshold = pm.Integer(default=100, precedence=-1, bounds=(0, 10_000), step=1)
     k = pm.Number(
-        default=10,
+        default=5,
         precedence=-1,
         bounds=(1, 20),
         doc='Steepness of the sigmoid curve',
@@ -39,7 +46,7 @@ class Boost(pm.Parameterized):
     b = pm.Number(
         default=-0.2,
         precedence=-1,
-        bounds=(-0.5, 0.5),
+        bounds=(-1, 1),
         doc='Shift of the sigmoid curve',
         label='Shift',
         step=0.01,
@@ -71,6 +78,10 @@ class Boost(pm.Parameterized):
                     self.distribution = self._min_max_scale(signal)
                 elif self.transformation == 'NormalScale':
                     self.distribution = self._normal_scale(signal)
+                elif self.transformation == 'LogNormalScale':
+                    self.distribution = self._log_normal_scale(signal)
+                elif self.transformation == 'LogMinMaxScale':
+                    self.distribution = self._log_minmax_scale(signal)
                 else:
                     raise (Exception(f'Unkown Transformation: {self.transformation}'))
                 self.distribution = self.boost_factor * self.distribution
@@ -122,9 +133,18 @@ class Boost(pm.Parameterized):
     def _normal_scale(signal):
         return ((signal - signal.mean()) / signal.std() + 0.5).clip(lower=0, upper=1)
 
-    def _sigmoid_scale(self, signal, **params):
-        return self._sigmoid(self._normal_scale(signal), **params)
+    def _log_normal_scale(self, signal):
+        return self._normal_scale(np.log(signal))
 
+    def _log_minmax_scale(self, signal):
+        return self._min_max_scale(np.log(signal))
+
+    def _sigmoid_scale(self, signal, **params):
+        return self._min_max_scale(
+            self._sigmoid(self._log_minmax_scale(signal), **params)
+        )
+
+    @pm.depends('distribution')
     def view_distribution(self):
         distribution_view = (
             self.distribution.sort_values(ascending=False)
@@ -139,6 +159,7 @@ class Boost(pm.Parameterized):
         )
         return distribution_view
 
+    @pm.depends('signal', 'token_logy')
     def view_signal(self):
         signal_view = (
             self.signal.sort_values(ascending=False)
@@ -246,11 +267,13 @@ class Boost(pm.Parameterized):
             shaded_signal = shaded_signal.options(yticks=yticks, logy=True)
         return shaded_signal
 
+    @pm.depends('input', 'distribution')
     def output(self):
         df = self.input.dataset[['address', 'balance']].copy(deep=True)
         df['Boost'] = self.distribution
         return df
 
+    @pm.depends('signal', 'distribution')
     def view_panel(self):
         return pn.Row(
             pn.Column(self, self.view_explainer),

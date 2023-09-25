@@ -1,3 +1,4 @@
+import pandas as pd
 import panel as pn
 import param as pm
 
@@ -9,6 +10,14 @@ class BoostFactory(pm.Parameterized):
     boosts = pm.List(default=[], class_=Boost, precedence=-1)
     new_boost = pm.Action(lambda self: self._new_boost())
     remove_boost = pm.Action(lambda self: self._remove_boost())
+
+    @pm.depends('boosts', watch=True, on_init=True)
+    def _update_watchers(self):
+        for boost in self.boosts:
+            boost.param.watch(self._on_boost_change, 'distribution')
+
+    def _on_boost_change(self, event):
+        self.param.trigger('boosts')
 
     def _new_boost(self):
         self.boosts = self.boosts + [(Boost(**self.template.param.values()))]
@@ -23,13 +32,21 @@ class BoostFactory(pm.Parameterized):
         return pn.Column(*[boost.view_panel for boost in self.boosts])
 
     def collect_boosts(self):
-        for boost in self.boosts:
-            signal = boost.signal
-            distribution = boost.distribution
-            input = boost.input
-            return pn.Tabs(
-                ('Signal', signal), ('Distribution', distribution), ('input', input)
-            )
+        boost_outputs_list = [boost.output() for boost in self.boosts]
+        if not boost_outputs_list:
+            boost_outputs = pd.DataFrame(columns=['address', 'balance', 'boost'])
+        else:
+            boost_outputs = boost_outputs_list[0]
+            for idx, df in enumerate(boost_outputs_list[1:], start=1):
+                boost_outputs = boost_outputs.merge(
+                    df, on='address', how='outer', suffixes=('', f'_{idx}')
+                )
+        boost_outputs = boost_outputs.fillna(0)
+        boost_outputs['Total_Boost'] = boost_outputs[
+            [col for col in boost_outputs.columns if 'Boost' in col]
+        ].sum(axis=1)
+        boost_outputs = boost_outputs.sort_values('Total_Boost', ascending=False)
+        return boost_outputs
 
     def view(self):
         return pn.Row(self, self.boosts_view, self.collect_boosts)
