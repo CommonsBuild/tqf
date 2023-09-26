@@ -6,7 +6,7 @@ from .boost import Boost
 from .boost_factory import BoostFactory
 from .dataset import TEA, TEC, Donations
 from .donations_dashboard import DonationsDashboard
-from .quadratic_funding import QuadraticFunding
+from .quadratic_funding import TunableQuadraticFunding
 
 pn.extension('tabulator')
 
@@ -40,7 +40,7 @@ boost_factory = BoostFactory(template=tegr1_tec_boost)
 boost_factory.param['template'].objects = [tegr1_tec_boost, tegr1_tea_boost]
 boost_factory.boosts = [tegr1_tec_boost, tegr1_tea_boost]
 
-qf = QuadraticFunding(donations=donations)
+qf = TunableQuadraticFunding(donations=donations, boost_factory=boost_factory)
 
 app = pn.Tabs(
     ('Donations', pn.Column(donations.view(), donations_dashboard.view())),
@@ -48,7 +48,7 @@ app = pn.Tabs(
     ('TEA Token Distribution', tea_distribution.view()),
     ('Boost Tuning', tegr1_tec_boost.view()),
     ('Boost Factory', boost_factory.view()),
-    ('Quadradic Funding', qf.view()),
+    ('Tunable Quadradic Funding', qf.view()),
     active=5,
     dynamic=True,
 )

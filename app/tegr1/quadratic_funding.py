@@ -3,19 +3,19 @@ import panel as pn
 import param as pm
 
 
-class QuadraticFunding(pm.Parameterized):
+class TunableQuadraticFunding(pm.Parameterized):
 
-    donations = pm.Selector(
-        precedence=-1,
-    )
+    donations = pm.Selector()
+    boost_factory = pm.Selector()
+    boost_coefficient = pm.Number(1, bounds=(0, 10), step=0.1)
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Magnitude(0.2, step=0.01)
     qf = pm.DataFrame()
 
-    def _qf(self, donations):
+    def _qf(self, donations_dataset, donation_column='amountUSD'):
         """Apply the quadratic algorithm."""
         qf = (
-            self.donations.dataset.groupby('applicationId')['amountUSD']
+            donations_dataset.groupby('applicationId')[donation_column]
             .apply(lambda x: np.square(np.sum(np.sqrt(x))))
             .sort_values(ascending=False)
         ).to_frame(name='quadratic_funding')
@@ -49,7 +49,7 @@ class QuadraticFunding(pm.Parameterized):
         on_init=True,
     )
     def update_qf(self):
-        self.qf = self._qf(self.donations)
+        self.qf = self._qf(self.donations.dataset)
 
     def qf_bar(self):
         return self.qf['quadratic_funding'].hvplot.bar(
@@ -66,11 +66,35 @@ class QuadraticFunding(pm.Parameterized):
             title='Quadratic Funding Distribution', shared_axes=False
         )
 
+    def boosting_output(self):
+        return self.boost_factory.collect_boosts()
+
+    def donations_dataset(self):
+        return self.donations.dataset
+
+    def boosted_donations(self):
+        boosted_donations = (
+            self.boosting_output()
+            .merge(
+                self.donations_dataset(),
+                left_on='address',
+                right_on='voter',
+                how='right',
+            )
+            .fillna(0)
+        )
+        boosted_donations['Boosted Amount'] = (
+            1 + boosted_donations['Total_Boost']
+        ) * boosted_donations['amountUSD']
+        return boosted_donations
+
+    def boosted_qf(self):
+        boosted_donations = self.boosted_donations()
+        boosted_qf = self._qf(boosted_donations, donation_column='Boosted Amount')
+        return boosted_qf
+
     def view(self):
-        return pn.Column(
+        return pn.Row(
             self,
-            pn.Row(
-                # self.qf,
-                # pn.Column(self.qf_bar, self.qf_distribution_bar, self.qf_matching_bar),
-            ),
+            self.boosted_qf(),
         )
