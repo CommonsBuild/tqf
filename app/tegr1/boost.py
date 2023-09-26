@@ -271,6 +271,7 @@ class Boost(pm.Parameterized):
     def output(self):
         df = self.input.dataset[['address', 'balance']].copy(deep=True)
         df['Boost'] = self.distribution
+        df = df.sort_values('Boost', ascending=False)
         return df
 
     @pm.depends('signal', 'distribution')

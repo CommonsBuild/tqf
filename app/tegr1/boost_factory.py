@@ -10,6 +10,7 @@ class BoostFactory(pm.Parameterized):
     boosts = pm.List(default=[], class_=Boost, precedence=-1)
     new_boost = pm.Action(lambda self: self._new_boost())
     remove_boost = pm.Action(lambda self: self._remove_boost())
+    combine_method = pm.Selector(default='max', objects=['max', 'sum'])
 
     @pm.depends('boosts', watch=True, on_init=True)
     def _update_watchers(self):
@@ -42,9 +43,14 @@ class BoostFactory(pm.Parameterized):
                     df, on='address', how='outer', suffixes=('', f'_{idx}')
                 )
         boost_outputs = boost_outputs.fillna(0)
-        boost_outputs['Total_Boost'] = boost_outputs[
-            [col for col in boost_outputs.columns if 'Boost' in col]
-        ].sum(axis=1)
+        if self.combine_method == 'max':
+            boost_outputs['Total_Boost'] = boost_outputs[
+                [col for col in boost_outputs.columns if 'Boost' in col]
+            ].max(axis=1)
+        elif self.combine_method == 'sum':
+            boost_outputs['Total_Boost'] = boost_outputs[
+                [col for col in boost_outputs.columns if 'Boost' in col]
+            ].sum(axis=1)
         boost_outputs = boost_outputs.sort_values('Total_Boost', ascending=False)
         return boost_outputs
 
