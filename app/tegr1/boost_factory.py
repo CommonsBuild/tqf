@@ -29,11 +29,10 @@ class BoostFactory(pm.Parameterized):
             self.boosts.pop()
             self.param.trigger('boosts')
 
-    # @pm.depends('boosts')
     def boosts_view(self):
         return pn.Column(*[boost.view_panel for boost in self.boosts])
 
-    @pm.depends('combine_method', watch=True)
+    @pm.depends('combine_method', 'boosts', watch=True)
     def collect_boosts(self):
         boost_outputs_list = [boost.output() for boost in self.boosts]
         if not boost_outputs_list:
@@ -53,7 +52,9 @@ class BoostFactory(pm.Parameterized):
             boost_outputs['Total_Boost'] = boost_outputs[
                 [col for col in boost_outputs.columns if 'Boost' in col]
             ].sum(axis=1)
-        boost_outputs = boost_outputs.sort_values('Total_Boost', ascending=False)
+        boost_outputs = boost_outputs.sort_values(
+            ['Total_Boost', 'balance'], ascending=False
+        )
         return boost_outputs
 
     def view(self):

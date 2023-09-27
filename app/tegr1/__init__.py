@@ -49,10 +49,12 @@ app = pn.Tabs(
     ('Boost Tuning', tegr1_tec_boost.view()),
     ('Boost Factory', boost_factory.view()),
     ('Tunable Quadradic Funding', qf.view()),
-    active=4,
+    active=5,
     dynamic=True,
 )
 
+boost_factory._new_boost()
+boost_factory.template = tegr1_tea_boost
 boost_factory._new_boost()
 
 if __name__ == '__main__':
