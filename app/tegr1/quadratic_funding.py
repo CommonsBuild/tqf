@@ -9,7 +9,7 @@ class TunableQuadraticFunding(pm.Parameterized):
     donations = pm.Selector()
     boost_factory = pm.Selector()
     boosts = pm.DataFrame(precedence=-1)
-    boost_coefficient = pm.Number(1, bounds=(0, 10), step=0.1)
+    boost_coefficient = pm.Number(2, bounds=(0, 10), step=0.1)
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Magnitude(0.2, step=0.01)
     qf = pm.DataFrame(precedence=-1)
