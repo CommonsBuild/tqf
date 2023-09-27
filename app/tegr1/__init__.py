@@ -38,7 +38,7 @@ tegr1_tea_boost.param['input'].objects = [tea_distribution, tea_distribution]
 
 boost_factory = BoostFactory(template=tegr1_tec_boost)
 boost_factory.param['template'].objects = [tegr1_tec_boost, tegr1_tea_boost]
-boost_factory.boosts = [tegr1_tec_boost, tegr1_tea_boost]
+# boost_factory.boosts = [tegr1_tec_boost, tegr1_tea_boost]
 
 qf = TunableQuadraticFunding(donations=donations, boost_factory=boost_factory)
 
@@ -49,11 +49,11 @@ app = pn.Tabs(
     ('Boost Tuning', tegr1_tec_boost.view()),
     ('Boost Factory', boost_factory.view()),
     ('Tunable Quadradic Funding', qf.view()),
-    active=5,
+    active=4,
     dynamic=True,
 )
 
-# boost_factory._new_boost()
+boost_factory._new_boost()
 
 if __name__ == '__main__':
     print(donations)

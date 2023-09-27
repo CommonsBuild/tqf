@@ -18,20 +18,22 @@ class BoostFactory(pm.Parameterized):
             boost.param.watch(self._on_boost_change, 'distribution')
 
     def _on_boost_change(self, event):
-        self.param.trigger('boosts')
+        self.param.trigger('combine_method')
 
     def _new_boost(self):
-        self.boosts = self.boosts + [(Boost(**self.template.param.values()))]
+        self.boosts.append((Boost(**self.template.param.values())))
         self.param.trigger('boosts')
 
     def _remove_boost(self):
         if len(self.boosts):
-            self.boosts = self.boosts[:-1]
+            self.boosts.pop()
             self.param.trigger('boosts')
 
+    # @pm.depends('boosts')
     def boosts_view(self):
         return pn.Column(*[boost.view_panel for boost in self.boosts])
 
+    @pm.depends('combine_method', watch=True)
     def collect_boosts(self):
         boost_outputs_list = [boost.output() for boost in self.boosts]
         if not boost_outputs_list:
