@@ -20,7 +20,7 @@ class TunableQuadraticFunding(pm.Parameterized):
     def _qf(self, donations_dataset, donation_column='amountUSD'):
         """Apply the quadratic algorithm."""
         qf = (
-            donations_dataset.groupby('applicationId')[donation_column]
+            donations_dataset.groupby('grantAddress')[donation_column]
             .apply(lambda x: np.square(np.sum(np.sqrt(x))))
             .sort_values(ascending=False)
         ).to_frame(name='quadratic_funding')
@@ -105,7 +105,7 @@ class TunableQuadraticFunding(pm.Parameterized):
         results = pd.merge(
             self.qf,
             self.boosted_qf,
-            on='applicationId',
+            on='grantAddress',
             suffixes=('', '_boosted'),
         )
         results['Percentage Boost'] = 100 * (

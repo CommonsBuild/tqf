@@ -54,7 +54,7 @@ app = pn.Tabs(
     ('Boost Factory', boost_factory.view()),
     ('Tunable Quadradic Funding', qf.view()),
     ('TQF Math', tqf_math.view()),
-    active=5,
+    active=0,
     dynamic=True,
 )
 

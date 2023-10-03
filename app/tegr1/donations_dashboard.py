@@ -13,6 +13,7 @@ pn.extension('tabulator')
 class DonationsDashboard(pm.Parameterized):
     donations = pm.Selector(precedence=-1)
 
+    @pm.depends('donations.dataset')
     def donor_view(self):
         df = self.donations.dataset
         donor_vote_counts = (
@@ -33,21 +34,22 @@ class DonationsDashboard(pm.Parameterized):
         )
         return pn.Row(histogram, table)
 
+    @pm.depends('donations.dataset')
     def sankey_view(self):
         df = self.donations.dataset
-        sankey = hv.Sankey(df[['voter', 'projectId', 'amountUSD']])
+        sankey = hv.Sankey(df[['voter', 'grantAddress', 'amountUSD']])
         return sankey
 
+    @pm.depends('donations.dataset')
     def projects_view(self):
         df = self.donations.dataset
 
         # Calculate Data per Project
         projects = (
-            df.groupby('applicationId')
+            df.groupby('grantAddress')
             .apply(
                 lambda group: pd.Series(
                     {
-                        'projectId': group['projectId'].iloc[0],
                         'donor_count': group['voter'].nunique(),
                         'mean_donation': group['amountUSD'].mean(),
                         'median_donation': group['amountUSD'].median(),
@@ -72,6 +74,7 @@ class DonationsDashboard(pm.Parameterized):
         )
         return projects_view
 
+    @pm.depends('donations.dataset')
     def contributors_view(self):
         """
         Note, the following three terms are conflated: donor, contributor, and voter.
@@ -84,13 +87,13 @@ class DonationsDashboard(pm.Parameterized):
             .apply(
                 lambda group: pd.Series(
                     {
-                        'project_count': group['projectId'].nunique(),
+                        'project_count': group['grantAddress'].nunique(),
                         'mean_donation': group['amountUSD'].mean(),
                         'median_donation': group['amountUSD'].median(),
                         'total_donation': group['amountUSD'].sum(),
                         'max_donation': group['amountUSD'].max(),
-                        'max_applicationId': group.loc[
-                            group['amountUSD'].idxmax(), 'applicationId'
+                        'max_grantAddress': group.loc[
+                            group['amountUSD'].idxmax(), 'grantAddress'
                         ],
                         'donations': sorted(group['amountUSD'].tolist(), reverse=True),
                     }
@@ -111,29 +114,32 @@ class DonationsDashboard(pm.Parameterized):
         )
         return contributors_view
 
+    @pm.depends('donations.dataset', watch=True)
     def contributions_matrix(self):
         df = self.donations.dataset
         contributions_matrix = df.pivot_table(
-            index='voter', columns='applicationId', values='amountUSD', aggfunc='sum'
+            index='voter', columns='grantAddress', values='amountUSD', aggfunc='sum'
         )
         return contributions_matrix
 
+    @pm.depends('donations.dataset')
     def contributions_matrix_view(self):
         contributions_matrix = self.contributions_matrix()
         contributions_matrix_view = pn.widgets.Tabulator(contributions_matrix)
         return contributions_matrix_view
 
+    @pm.depends('donations.dataset')
     def contributions_network_view(self):
         df = self.donations.dataset.replace(0, np.nan)
 
         df['voter'] = df['voter'].astype(str)
-        df['applicationId'] = df['applicationId'].astype(str)
+        df['grantAddress'] = df['grantAddress'].astype(str)
 
         # Create graph from the dataframe
         G = nx.from_pandas_edgelist(
             df,
             'voter',
-            'applicationId',
+            'grantAddress',
             ['amountUSD'],
             create_using=nx.Graph(),
         )
@@ -151,7 +157,7 @@ class DonationsDashboard(pm.Parameterized):
                 G.nodes[node]['type'] = 'voter'
                 G.nodes[node]['outline_color'] = 'blue'  # Outline color for voters
             else:
-                G.nodes[node]['size'] = df[df['applicationId'] == node][
+                G.nodes[node]['size'] = df[df['grantAddress'] == node][
                     'amountUSD'
                 ].sum()
                 G.nodes[node]['id'] = node
@@ -199,8 +205,10 @@ class DonationsDashboard(pm.Parameterized):
 
     def donation_groups_view(self):
         df = self.donations.dataset
-        plot = df.groupby(['applicationId'])
+        plot = df.groupby(['grantAddress'])
+        return plot
 
+    @pm.depends('donations.dataset')
     def view(self):
         return pn.Column(
             self,

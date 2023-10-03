@@ -50,7 +50,9 @@ class Donations(Dataset):
         path='./app/input/*.csv',
     )
     dataset = pm.DataFrame(
-        default=None, columns={'voter', 'amountUSD'}, label='Donations Dataset'
+        default=None,
+        columns={'voter', 'amountUSD', 'grantAddress'},
+        label='Donations Dataset',
     )
 
 
