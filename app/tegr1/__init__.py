@@ -11,7 +11,7 @@ from .quadratic_funding import TunableQuadraticFunding
 
 pn.extension('tabulator')
 
-donations = Donations()
+donations = Donations(file='./app/input/Token_Engineering_squelched_coefficients.csv')
 
 donations_dashboard = DonationsDashboard(donations=donations)
 

@@ -47,7 +47,7 @@ class TunableQuadraticFunding(pm.Parameterized):
         return qf
 
     @pm.depends(
-        'donations',
+        'donations.param',
         'matching_pool',
         'matching_percentage_cap',
         watch=True,
