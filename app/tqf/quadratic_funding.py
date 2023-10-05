@@ -131,23 +131,33 @@ class TunableQuadraticFunding(pm.Parameterized):
             on='grantAddress',
             suffixes=('', '_boosted'),
         )
-        results['Percentage Boost'] = 100 * (
+        results['Boost Percentage Change'] = 100 * (
             (results['matching_boosted'] - results['matching']) / results['matching']
         )
         results['ClusterMatch'] = self.donation_profile_clustermatch(
             self.donations.dataset
         )
+
+        results['Cluster Match Percentage Change'] = 100 * (
+            (results['ClusterMatch'] - results['matching']) / results['matching']
+        )
         results['ClusterMatch Boosted'] = self.donation_profile_clustermatch(
             self.boosted_donations
+        )
+        results['Cluster Match Boosted Percentage Change'] = 100 * (
+            (results['ClusterMatch Boosted'] - results['matching'])
+            / results['matching']
         )
 
         self.results = results[
             [
                 'matching',
                 'matching_boosted',
-                'Percentage Boost',
+                'Boost Percentage Change',
                 'ClusterMatch',
+                'Cluster Match Percentage Change',
                 'ClusterMatch Boosted',
+                'Cluster Match Boosted Percentage Change',
             ]
         ]
 
