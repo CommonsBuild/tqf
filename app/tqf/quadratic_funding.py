@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import numpy as np
 import pandas as pd
 import panel as pn
@@ -13,7 +15,7 @@ class TunableQuadraticFunding(pm.Parameterized):
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Magnitude(0.2, step=0.01)
     qf = pm.DataFrame(precedence=-1)
-    boosted_donations = pm.DataFrame(precedence=-1)
+    boosted_donations = pm.DataFrame(precedence=1)
     boosted_qf = pm.DataFrame(precedence=-1)
     results = pm.DataFrame(precedence=1)
 
@@ -100,9 +102,9 @@ class TunableQuadraticFunding(pm.Parameterized):
         boosted_qf = self._qf(self.boosted_donations, donation_column='Boosted Amount')
         self.boosted_qf = boosted_qf
 
-    def donation_profile_clustermatch(self, donation_df):
+    def donation_profile_clustermatch(self, donation_df, donation_column='amountUSD'):
         donation_df = self.donations.dataset.pivot_table(
-            index='voter', columns='grantAddress', values='amountUSD'
+            index='voter', columns='grantAddress', values=donation_column
         ).fillna(0)
         # Convert donation dataframe to binary dataframe
         binary_df = (donation_df > 0).astype(int)
@@ -142,7 +144,7 @@ class TunableQuadraticFunding(pm.Parameterized):
             (results['ClusterMatch'] - results['matching']) / results['matching']
         )
         results['ClusterMatch Boosted'] = self.donation_profile_clustermatch(
-            self.boosted_donations
+            self.boosted_donations, donation_column='amountUSD'
         )
         results['Cluster Match Boosted Percentage Change'] = 100 * (
             (results['ClusterMatch Boosted'] - results['matching'])
@@ -161,5 +163,17 @@ class TunableQuadraticFunding(pm.Parameterized):
             ]
         ]
 
+    def get_results_csv(self):
+
+        output = BytesIO()
+        self.results.reset_index().to_csv(output, index=False)
+        output.seek(0)
+        return output
+
     def view(self):
-        return pn.Column(self)
+        csv_download = pn.widgets.FileDownload(
+            callback=self.get_results_csv,
+            filename='./app/output/results.csv',
+            button_type='primary',
+        )
+        return pn.Column(self, csv_download)
