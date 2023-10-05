@@ -3,7 +3,7 @@ import logging
 # from fdfpg import app
 import panel as pn
 from icecream import ic
-from tegr1 import app
+from tqf.tegr import tegr2_app as app
 
 
 def pn_exception_handler(ex):
