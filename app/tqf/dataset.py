@@ -121,19 +121,6 @@ class TEGR2_TEC(TokenDistribution):
         path='./app/input/*.csv',
     )
 
-    @pm.depends('file', watch=True)
-    def load_file(self):
-        """
-        TEC Data for TEGR2
-        """
-        tec_holdings_tegr2 = pd.read_csv(self.file)
-
-        # Extract address value from hyperlink column
-        tec_holdings_tegr2['address'] = tec_holdings_tegr2['address'].str.extract(
-            r'<a [^>]*>([^<]+)</a>', expand=False
-        )
-        self.dataset = tec_holdings_tegr2
-
 
 class TEGR2_TEA(TokenDistribution):
     file = pm.FileSelector(
@@ -146,21 +133,6 @@ class TEGR2_TEA(TokenDistribution):
         """
         TEA Data might have 'wallet' field. If it does we remap it to 'address'.
         """
-        with open('./app/input/otterspace_1.json', 'r') as f:
-            data = json.load(f)
-        tea_1 = pd.DataFrame(data['results'])
-        with open('./app/input/otterspace_2.json', 'r') as f:
-            data = json.load(f)
-        tea_2 = pd.DataFrame(data['results'])
-
-        with open('./app/input/otterspace_3.json', 'r') as f:
-            data = json.load(f)
-        tea_3 = pd.DataFrame(data['results'])
-
-        tea = pd.concat([tea_1, tea_2, tea_3])
-
-        tea = tea.rename(
-            {'id': 'address', 'totalBadgesInCommunityCount': 'balance'}, axis=1
-        )
-
-        self.dataset = tea
+        df = pd.read_csv(self.file)
+        df.rename({'wallet': 'address'}, axis=1, inplace=True)
+        self.dataset = df

@@ -100,6 +100,29 @@ class TunableQuadraticFunding(pm.Parameterized):
         boosted_qf = self._qf(self.boosted_donations, donation_column='Boosted Amount')
         self.boosted_qf = boosted_qf
 
+    def donation_profile_clustermatch(self, donation_df):
+        donation_df = self.donations.dataset.pivot_table(
+            index='voter', columns='grantAddress', values='amountUSD'
+        ).fillna(0)
+        # Convert donation dataframe to binary dataframe
+        binary_df = (donation_df > 0).astype(int)
+
+        # Create 'cluster' column representing the donation profile of each donor
+        binary_df['cluster'] = binary_df.apply(
+            lambda row: ''.join(row.astype(str)), axis=1
+        )
+
+        # Group by 'cluster' and sum donations from the same cluster
+        cluster_sums = donation_df.groupby(binary_df['cluster']).sum()
+
+        # Calculate the square root of each donation in the cluster
+        cluster_sqrt = np.sqrt(cluster_sums)
+
+        # Sum the square roots of all clusters grouped by project and square the sums
+        funding = (cluster_sqrt.sum() ** 2).to_dict()
+
+        return funding
+
     @pm.depends('qf', 'boosted_qf', watch=True)
     def update_results(self):
         results = pd.merge(
@@ -111,7 +134,22 @@ class TunableQuadraticFunding(pm.Parameterized):
         results['Percentage Boost'] = 100 * (
             (results['matching_boosted'] - results['matching']) / results['matching']
         )
-        self.results = results
+        results['ClusterMatch'] = self.donation_profile_clustermatch(
+            self.donations.dataset
+        )
+        results['ClusterMatch Boosted'] = self.donation_profile_clustermatch(
+            self.boosted_donations
+        )
+
+        self.results = results[
+            [
+                'matching',
+                'matching_boosted',
+                'Percentage Boost',
+                'ClusterMatch',
+                'ClusterMatch Boosted',
+            ]
+        ]
 
     def view(self):
         return pn.Column(self)

@@ -69,7 +69,7 @@ tegr1_app = pn.Tabs(
     ('Boost Factory', tegr1_boost_factory.view()),
     ('Tunable Quadradic Funding', tegr1_qf.view()),
     ('TQF Math', tqf_math.view()),
-    active=1,
+    active=5,
     dynamic=True,
 )
 
@@ -78,71 +78,71 @@ tegr1_boost_factory.template = tegr1_tea_boost
 tegr1_boost_factory._new_boost()
 
 
-# TEGR2
-
-tegr2_donations = Donations(
-    file='./app/input/Token_Engineering_squelched_coefficients.csv'
-)
-
-# Select which round to load donations for
-tegr2_donations_dashboard = DonationsDashboard(donations=tegr2_donations)
-
-tegr2_tec_distribution = TEGR2_TEC()
-tegr2_tea_distribution = TEGR2_TEA()
-
-
-tegr2_tec_boost = Boost(
-    name='tegr2_tec_boost',
-    input=tegr2_tec_distribution,
-    transformation='Threshold',
-    threshold=10,
-    token_logy=True,
-)
-tegr2_tec_boost.param['input'].objects = [
-    tegr2_tec_distribution,
-    tegr2_tea_distribution,
-]
-
-tegr2_tea_boost = Boost(
-    name='tegr2_tea_boost',
-    input=tegr2_tea_distribution,
-    transformation='Threshold',
-    threshold=2,
-)
-tegr2_tea_boost.param['input'].objects = [
-    tegr2_tea_distribution,
-    tegr2_tea_distribution,
-]
-
-
-tegr2_boost_factory = BoostFactory(template=tegr2_tec_boost)
-tegr2_boost_factory.param['template'].objects = [tegr2_tec_boost, tegr2_tea_boost]
-# boost_factory.boosts = [tegr2_tec_boost, tegr2_tea_boost]
-
+# # TEGR2
+#
+# tegr2_donations = Donations(
+#     file='./app/input/Token_Engineering_squelched_coefficients.csv'
+# )
+#
+# # Select which round to load donations for
+# tegr2_donations_dashboard = DonationsDashboard(donations=tegr2_donations)
+#
+# tegr2_tec_distribution = TEGR2_TEC()
+# tegr2_tea_distribution = TEGR2_TEA()
+#
+#
+# tegr2_tec_boost = Boost(
+#     name='tegr2_tec_boost',
+#     input=tegr2_tec_distribution,
+#     transformation='Threshold',
+#     threshold=10,
+#     token_logy=True,
+# )
+# tegr2_tec_boost.param['input'].objects = [
+#     tegr2_tec_distribution,
+#     tegr2_tea_distribution,
+# ]
+#
+# tegr2_tea_boost = Boost(
+#     name='tegr2_tea_boost',
+#     input=tegr2_tea_distribution,
+#     transformation='Threshold',
+#     threshold=1,
+# )
+# tegr2_tea_boost.param['input'].objects = [
+#     tegr2_tea_distribution,
+#     tegr2_tea_distribution,
+# ]
+#
+#
+# tegr2_boost_factory = BoostFactory(template=tegr2_tec_boost)
+# tegr2_boost_factory.param['template'].objects = [tegr2_tec_boost, tegr2_tea_boost]
+# # boost_factory.boosts = [tegr2_tec_boost, tegr2_tea_boost]
+#
 # tegr2_qf = TunableQuadraticFunding(
 #     donations=tegr2_donations, boost_factory=tegr2_boost_factory
 # )
-
-tqf_math = TQFMath()
-
-
-tegr2_app = pn.Tabs(
-    ('Donations', pn.Column(tegr2_donations.view(), tegr2_donations_dashboard.view())),
-    (
-        'Token Distribution',
-        pn.Column(
-            tegr2_tec_distribution.view  # , tegr2_tec_distribution.view_distribution
-        ),
-    ),
-    ('TEA Token Distribution', tegr2_tea_distribution.view()),
-    ('Boost Tuning', tegr2_tec_boost.view()),
-    ('Boost Factory', tegr2_boost_factory.view()),
-    # ('Tunable Quadradic Funding', tegr2_qf.view()),
-    ('TQF Math', tqf_math.view()),
-    active=1,
-    dynamic=True,
-)
-
-tegr2_boost_factory._new_boost()
-tegr2_boost_factory.template = tegr2_tea_boost
-tegr2_boost_factory._new_boost()
+#
+# tqf_math = TQFMath()
+#
+#
+# tegr2_app = pn.Tabs(
+#     ('Donations', pn.Column(tegr2_donations.view(), tegr2_donations_dashboard.view())),
+#     (
+#         'Token Distribution',
+#         pn.Column(
+#             tegr2_tec_distribution.view  # , tegr2_tec_distribution.view_distribution
+#         ),
+#     ),
+#     ('TEA Token Distribution', tegr2_tea_distribution.view()),
+#     ('Boost Tuning', tegr2_tec_boost.view()),
+#     ('Boost Factory', tegr2_boost_factory.view()),
+#     ('Tunable Quadradic Funding', tegr2_qf.view()),
+#     ('TQF Math', tqf_math.view()),
+#     active=1,
+#     dynamic=True,
+# )
+#
+# tegr2_boost_factory._new_boost()
+# tegr2_boost_factory.template = tegr2_tea_boost
+# tegr2_boost_factory._new_boost()
