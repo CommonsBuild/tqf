@@ -11,7 +11,7 @@ class TunableQuadraticFunding(pm.Parameterized):
     donations = pm.Selector()
     boost_factory = pm.Selector()
     boosts = pm.DataFrame(precedence=-1)
-    boost_coefficient = pm.Number(2, bounds=(0, 10), step=0.1)
+    boost_coefficient = pm.Number(1, bounds=(0, 10), step=0.1)
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Magnitude(0.2, step=0.01)
     qf = pm.DataFrame(precedence=-1)
@@ -87,9 +87,12 @@ class TunableQuadraticFunding(pm.Parameterized):
             right_on='voter',
             how='right',
         ).fillna(0)
-        boosted_donations['Boosted Amount'] = (
+        boosted_donations['coefficient'] = (
             1 + self.boost_coefficient * boosted_donations['Total_Boost']
-        ) * boosted_donations['amountUSD']
+        )
+        boosted_donations['Boosted Amount'] = (
+            boosted_donations['coefficient'] * boosted_donations['amountUSD']
+        )
         self.boosted_donations = boosted_donations
 
     @pm.depends(
@@ -164,16 +167,29 @@ class TunableQuadraticFunding(pm.Parameterized):
         ]
 
     def get_results_csv(self):
-
         output = BytesIO()
         self.results.reset_index().to_csv(output, index=False)
         output.seek(0)
         return output
 
+    def get_boosted_donations_csv(self):
+        output = BytesIO()
+        boosted_donations = self.boosted_donations
+        boosted_donations[self.donations.dataset.columns].reset_index().to_csv(
+            output, index=False
+        )
+        output.seek(0)
+        return output
+
     def view(self):
-        csv_download = pn.widgets.FileDownload(
+        results_download = pn.widgets.FileDownload(
             callback=self.get_results_csv,
             filename='./app/output/results.csv',
             button_type='primary',
         )
-        return pn.Column(self, csv_download)
+        boosted_donations_download = pn.widgets.FileDownload(
+            callback=self.get_boosted_donations_csv,
+            filename='./app/output/boosted_donations.csv',
+            button_type='primary',
+        )
+        return pn.Column(self, results_download, boosted_donations_download)
