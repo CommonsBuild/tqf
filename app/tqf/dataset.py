@@ -58,6 +58,19 @@ class Donations(Dataset):
         label='Donations Dataset',
     )
 
+    @pm.depends('dataset', watch=True, on_init=True)
+    def add_grant_names(self):
+        if 'Grant Name' not in self.dataset.columns:
+            grant_names = pd.read_csv('./app/input/tegr2_grants.csv')
+            print(grant_names)
+            self.dataset = pd.merge(
+                self.dataset,
+                grant_names,
+                how='left',
+                left_on='grantAddress',
+                right_on='Grant Address',
+            )
+
 
 class TokenDistribution(Dataset):
     file = pm.FileSelector(

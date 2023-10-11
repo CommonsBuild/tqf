@@ -15,14 +15,14 @@ class TunableQuadraticFunding(pm.Parameterized):
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Magnitude(0.2, step=0.01)
     qf = pm.DataFrame(precedence=-1)
-    boosted_donations = pm.DataFrame(precedence=1)
+    boosted_donations = pm.DataFrame(precedence=-1)
     boosted_qf = pm.DataFrame(precedence=-1)
     results = pm.DataFrame(precedence=1)
 
     def _qf(self, donations_dataset, donation_column='amountUSD'):
         """Apply the quadratic algorithm."""
         qf = (
-            donations_dataset.groupby('grantAddress')[donation_column]
+            donations_dataset.groupby(['Grant Name', 'grantAddress'])[donation_column]
             .apply(lambda x: np.square(np.sum(np.sqrt(x))))
             .sort_values(ascending=False)
         ).to_frame(name='quadratic_funding')
@@ -107,7 +107,9 @@ class TunableQuadraticFunding(pm.Parameterized):
 
     def donation_profile_clustermatch(self, donation_df, donation_column='amountUSD'):
         donation_df = self.donations.dataset.pivot_table(
-            index='voter', columns='grantAddress', values=donation_column
+            index='voter',
+            columns=['Grant Name', 'grantAddress'],
+            values=donation_column,
         ).fillna(0)
         # Convert donation dataframe to binary dataframe
         binary_df = (donation_df > 0).astype(int)
@@ -133,7 +135,7 @@ class TunableQuadraticFunding(pm.Parameterized):
         results = pd.merge(
             self.qf,
             self.boosted_qf,
-            on='grantAddress',
+            on=['Grant Name', 'grantAddress'],
             suffixes=('', '_boosted'),
         )
         results['Boost Percentage Change'] = 100 * (
@@ -164,7 +166,7 @@ class TunableQuadraticFunding(pm.Parameterized):
                 'ClusterMatch Boosted',
                 'Cluster Match Boosted Percentage Change',
             ]
-        ]
+        ].reset_index()
 
     def get_results_csv(self):
         output = BytesIO()
