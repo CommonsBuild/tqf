@@ -6,8 +6,8 @@ from .boost import Boost
 from .boost_factory import BoostFactory
 from .dataset import TEGR1_TEA, TEGR1_TEC, Donations
 from .donations_dashboard import DonationsDashboard
-from .f_m_b import QuadraticFunding as TQFMath
 from .quadratic_funding import TunableQuadraticFunding
+from .tqf_math import QuadraticFunding as TQFMath
 
 pn.extension('tabulator')
 tegr1_donations = Donations(file='./app/input/vote_coefficients_input.csv')

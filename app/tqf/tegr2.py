@@ -6,8 +6,8 @@ from .boost import Boost
 from .boost_factory import BoostFactory
 from .dataset import TEGR2_TEA, TEGR2_TEC, Donations
 from .donations_dashboard import DonationsDashboard
-from .f_m_b import QuadraticFunding as TQFMath
 from .quadratic_funding import TunableQuadraticFunding
+from .tqf_math import QuadraticFunding as TQFMath
 
 pn.extension('tabulator')
 
