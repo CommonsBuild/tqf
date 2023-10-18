@@ -2,8 +2,10 @@ import logging
 
 # from fdfpg import app
 import panel as pn
+import param as pm
 from icecream import ic
-from tqf.tegr import tegr2_app as app
+from tqf.tegr1 import tegr1_app
+from tqf.tegr2 import tegr2_app
 
 
 def pn_exception_handler(ex):
@@ -32,4 +34,18 @@ pn.state.notifications.position = 'top-right'
 # ipython_thread.start()
 
 
-app.servable()
+class App(pm.Parameterized):
+    def view(self):
+        return pn.Tabs(
+            ('TEGR1', tegr1_app),
+            ('TEGR2', tegr2_app),
+            ('TEGR3', None),
+            ('Sim Data', None),
+            ('FDFPG', None),
+            active=0,
+            dynamic=True,
+        )
+
+
+App().view().servable()
+# tegr1_app.servable()
