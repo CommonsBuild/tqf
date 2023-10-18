@@ -42,7 +42,7 @@ class App(pm.Parameterized):
             ('TEGR3', None),
             ('Sim Data', None),
             ('FDFPG', None),
-            active=0,
+            active=1,
             dynamic=True,
         )
 

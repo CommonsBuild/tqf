@@ -62,7 +62,6 @@ class Donations(Dataset):
     def add_grant_names(self):
         if 'Grant Name' not in self.dataset.columns:
             grant_names = pd.read_csv('./app/input/tegr2_grants.csv')
-            print(grant_names)
             self.dataset = pd.merge(
                 self.dataset,
                 grant_names,

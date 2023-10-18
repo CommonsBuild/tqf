@@ -14,9 +14,9 @@ class TunableQuadraticFunding(pm.Parameterized):
     boost_coefficient = pm.Number(1, bounds=(0, 10), step=0.1)
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Magnitude(0.2, step=0.01)
-    qf = pm.DataFrame(precedence=-1)
+    qf = pm.DataFrame(precedence=1)
     boosted_donations = pm.DataFrame(precedence=-1)
-    boosted_qf = pm.DataFrame(precedence=-1)
+    boosted_qf = pm.DataFrame(precedence=1)
     results = pm.DataFrame(precedence=1)
 
     def _qf(self, donations_dataset, donation_column='amountUSD'):
@@ -35,10 +35,18 @@ class TunableQuadraticFunding(pm.Parameterized):
             qf['distribution'] < self.matching_percentage_cap,
             self.matching_percentage_cap,
         )
+
+        # Applying a Cap to the Distribution
+
+        # Identify Mask of Distributions Less than the Cap
         mask = qf['capped_distribution'] < self.matching_percentage_cap
+
+        # Scale low distributions by 1 - sum of high distributions
         qf.loc[mask, 'capped_distribution'] *= (
             1 - qf['capped_distribution'][~mask].sum()
         ) / qf['capped_distribution'][mask].sum()
+
+        # Cap the high distributions
         qf['capped_distribution'] = qf['capped_distribution'].where(
             qf['capped_distribution'] < self.matching_percentage_cap,
             self.matching_percentage_cap,
@@ -46,6 +54,8 @@ class TunableQuadraticFunding(pm.Parameterized):
 
         # Apply the Matching Pool
         qf['matching'] = qf['capped_distribution'] * self.matching_pool
+
+        print(qf)
         return qf
 
     @pm.depends(
@@ -56,6 +66,7 @@ class TunableQuadraticFunding(pm.Parameterized):
         on_init=True,
     )
     def update_qf(self):
+        print('----------------------------------------QFFF')
         self.qf = self._qf(self.donations.dataset)
 
     def view_qf_bar(self):
@@ -100,6 +111,7 @@ class TunableQuadraticFunding(pm.Parameterized):
         'matching_pool',
         'matching_percentage_cap',
         watch=True,
+        on_init=True,
     )
     def update_boosted_qf(self):
         boosted_qf = self._qf(self.boosted_donations, donation_column='Boosted Amount')
@@ -130,14 +142,16 @@ class TunableQuadraticFunding(pm.Parameterized):
 
         return funding
 
-    @pm.depends('qf', 'boosted_qf', watch=True)
+    @pm.depends('qf', 'boosted_qf', watch=True, on_init=True)
     def update_results(self):
+        print('HEEERE')
         results = pd.merge(
             self.qf,
             self.boosted_qf,
             on=['Grant Name', 'grantAddress'],
             suffixes=('', '_boosted'),
         )
+        print(results)
         results['Boost Percentage Change'] = 100 * (
             (results['matching_boosted'] - results['matching']) / results['matching']
         )
