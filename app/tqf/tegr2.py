@@ -7,7 +7,6 @@ from .boost_factory import BoostFactory
 from .dataset import TEGR2_TEA, TEGR2_TEC, Donations
 from .donations_dashboard import DonationsDashboard
 from .quadratic_funding import TunableQuadraticFunding
-from .tqf_math import QuadraticFunding as TQFMath
 
 pn.extension('tabulator')
 
@@ -49,8 +48,6 @@ tegr2_qf = TunableQuadraticFunding(
     donations=tegr2_donations, boost_factory=tegr2_boost_factory
 )
 
-tqf_math = TQFMath()
-
 
 tegr2_app = pn.Tabs(
     ('Donations', pn.Column(tegr2_donations.view(), tegr2_donations_dashboard.view())),
@@ -64,7 +61,6 @@ tegr2_app = pn.Tabs(
     ('Boost Tuning', tegr2_tec_boost.view()),
     ('Boost Factory', tegr2_boost_factory.view()),
     ('Tunable Quadradic Funding', tegr2_qf.view()),
-    ('TQF Math', tqf_math.view()),
     active=5,
     dynamic=True,
 )
