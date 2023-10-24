@@ -17,6 +17,8 @@ tegr1_donations = Donations(file='./app/input/vote_coefficients_input.csv')
 
 # Select which round to load donations for
 tegr1_donations_dashboard = DonationsDashboard(donations=tegr1_donations)
+print('YGG:')
+print(tegr1_donations)
 
 tegr1_tec_distribution = TEGR1_TEC()
 tegr1_tea_distribution = TEGR1_TEA()

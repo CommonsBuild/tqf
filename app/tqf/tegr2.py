@@ -15,7 +15,8 @@ pn.extension('tabulator')
 # TEGR2
 
 tegr2_donations = Donations(
-    file='./app/input/Token_Engineering_squelched_coefficients.csv'
+    file='./app/input/Token_Engineering_squelched_coefficients.csv',
+    grant_names_dataset='./app/input/tegr2_grants.csv',
 )
 
 # Select which round to load donations for

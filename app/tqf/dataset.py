@@ -58,10 +58,15 @@ class Donations(Dataset):
         label='Donations Dataset',
     )
 
-    @pm.depends('dataset', watch=True, on_init=True)
+    grant_names_dataset = pm.Selector(
+        default='./app/input/tegr1_grants.csv',
+        objects=['./app/input/tegr1_grants.csv', './app/input/tegr2_grants.csv'],
+    )
+
+    @pm.depends('dataset', 'grant_names_dataset', watch=True, on_init=True)
     def add_grant_names(self):
         if 'Grant Name' not in self.dataset.columns:
-            grant_names = pd.read_csv('./app/input/tegr2_grants.csv')
+            grant_names = pd.read_csv(self.grant_names_dataset)
             self.dataset = pd.merge(
                 self.dataset,
                 grant_names,
