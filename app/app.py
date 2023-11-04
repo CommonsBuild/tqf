@@ -6,6 +6,9 @@ import param as pm
 from icecream import ic
 from tqf.tegr1 import tegr1_app
 from tqf.tegr2 import tegr2_app
+from tqf.tqf_math import QuadraticFunding as TQFMath
+
+tqf_math = TQFMath()
 
 
 def pn_exception_handler(ex):
@@ -42,6 +45,7 @@ class App(pm.Parameterized):
             ('TEGR3', None),
             ('Sim Data', None),
             ('FDFPG', None),
+            ('TQF Math', tqf_math.view()),
             active=1,
             dynamic=True,
         )
