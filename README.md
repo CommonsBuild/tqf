@@ -1,67 +1,103 @@
 # Alloha
+---
 
+For more information on how to use Alloha and contribute to the research,
+please refer to the [Documentation](#) and [Contribution Guidelines](#).
 
-This research repository is maintained by The Token Engineering Commons (TEC) to aid in the
-operation of the Token Engineer grant round series (TEGRX) which allocates a target $100,000USD
-annual funding to token engineering public goods projects via Quadratic Funding. This research is funded from the TEC Common Pool via TAO Voting as an
-initiative lead by the TEC Coordination Team and YGG the data science fellow at
-TEC.
+This research repository is maintained by The Token Engineering Commons (TEC)
+to aid in the operation of the Token Engineering Grant Round (TEGRX) series
+which allocates a target annual $100,000USD funding to token engineering
+public goods projects via Quadratic Funding. 
 
-This repository was initialized by TEC technical support team (Rxx) to apply
-TEC token distribution and TEA credentials as a signal for TE expertise to by
-applied in QF funding rounds. To learn more, read the following:    
+To learn more, read the following:    
 https://medium.com/token-engineering-commons/expertise-and-quadratic-funding-bd4f0c5c3e23
 
-This repository now contains Alloha, a data science web framework that serves
-communities in operating the Tunable Quadratic Funding process.
+## Quadratic Funding
+
+Quadratic Funding is a capital allocation protocol that determines the
+distribution of matching funds across a set of public goods projects. The 
+algorithm determines the funding outcome based off of peer to peer contributions
+that are made from citizens to public goods. Formally:
+
+$$
+\mathbf{F}_p = \left( \sum_{i=1}^{n} \sqrt{c_{ip}} \right)^2
+$$
+
+Where $\mathbf{F}_p$ is the quadratic funding for project $p$ and $c_{ip}$ is the contribution made 
+by citizen $c_i$ to project $p$ where there are $n$ citizens.
+
+In matrix notation, QF is an operation that maps a contributions matrix
+$\mathbf{C} \in \mathbb{R}^{n \times m}$ to a funding vector $\mathbf{F} \in
+\mathbb{R}^{m}$ given $m$ public goods projects. 
+
+$$
+\mathbf{F} = \left( \text{sum}\left( \sqrt{\mathbf{C}} \right) \right)^2
+$$
+
+The contributions matrix is
+radicalized elementwise and then project columns are summed on axis 0. The
+resulting vector is squared elementwise to give the quadratic funding per
+project.
+
+The funding outcome is then normalized such that it sums to 1 and represents a
+distribution to be made by the matching pool.
+
 
 ## Tunable Quadratic Funding
 
-Tunable QF is a process that combines donation and token distribution datasets
-in a signal processing environment using the python data science stack. A token
-distribution represents a snapshot of a particular fungible or non-fungible
-token contract. A donation dataset contains rows with donor, project,
-amountUSD, and timestamp. Token distributions can be used to assign
-coefficients to donors or to projects. 
+### Contributor Boost Coefficient
 
-In the case of the TEGR1 algorithm, each donation is multiplied by the donor
-coefficient for that donation such that the qf algorithm becomes:
+Tunable QF introduces a contributor boost coefficient $b_i$ for each citizen
+$c_i$  that is applied as a multiplicative factor to each donation $c_{ip}$ for
+each public good $p$, such that the resulting funding mechanism becomes:
 
-## Modified Quadratic Funding Formula
-
-Quadratic Funding (QF) is a mathematical framework used to allocate funds to public goods in a way that optimally balances the number of contributions with the size of contributions. In the modified version of the QF used by the TEGRX series, each donation amount is adjusted by a donor-specific coefficient, \( c_i \), which represents the weight or influence of that donor's contribution. This coefficient can be determined by various factors such as past contributions, reputation, or other metrics relevant to the community.
-
-The modified QF formula with the donor coefficient is given by:
 
 $$
-F = \left( \sum_{i=1}^{n} \sqrt{c_i \cdot d_i} \right)^2
+\mathbf{F}_p = \left( \sum_{i=1}^{n} \sqrt{b_i\cdot{c_{ip}}} \right)^2
 $$
 
-Where:
 
-- \( F \) is the total funding that a project receives after the QF round.
-- \( c_i \) is the donor coefficient for the \( i \)-th donation.
-- \( d_i \) is the amount of the \( i \)-th donation.
-- \( n \) is the total number of donations.
-
-The donor coefficients can be represented as a vector:
+In matrix notation, we are applying the boost vector $\mathbf{B} \in
+\mathbb{R}^{n}$ as a coefficient for the contribution matrix.
 
 $$
-\vec{c} = \begin{bmatrix}
-           c_1 \\
-           c_2 \\
-           \vdots \\
-           c_n
-         \end{bmatrix}
+\mathbf{F} = \left( \sqrt{\mathbf{B}^T}\cdot{\sqrt{\mathbf{C}}}  \right)^2
 $$
 
-This vector \( \vec{c} \) allows us to adjust the influence of each donation individually, providing a tunable lever to the QF mechanism. By adjusting the coefficients, the community can fine-tune the funding distribution to better reflect its values and goals.
+Notice above that we do not need the sum operator anymore due to the nature of vector matrix multiplication.
+
+
+### Token Balances
+
+Consider a token distribution dataset as a vector $\mathbf{T} \in 
+\mathbb{Z}^{n+}$ such that $\mathbf{T_i}$ is the balance of $c_i$.
+
+| Address                           | Balance |
+|-----------------------------------|---------|
+| 0x456...abc                       | 200     |
+| 0x123...def                       | 100     |
+| ...                               | ...     |
+
+
+
+The dataset can represent fungible or non-fungible tokens.
+
+
+### Token Signaling
+
+Given a token distribution, a boost vector can be created using a
+signal transformation.
 
 ### Implementation in Alloha
 
-In Alloha, the tunable QF process is implemented using the Python data science stack. The framework takes in donation datasets and token distributions to compute the final funding allocation for each project. The donor coefficients are applied to the donations as part of the QF calculation, ensuring that each donor's influence is weighted according to the community-defined vector \( \vec{c} \).
+In Alloha, the tunable QF process is implemented using a Python data science
+stack. The framework takes in donation datasets and token distributions to
+compute the final funding allocation for each project. The donor coefficients
+are applied to the donations as part of the QF calculation, ensuring that each
+donor's influence is weighted according to the community-defined boost vector $B$.
 
-The framework is flexible and can accommodate various methods of determining the donor coefficients, such as:
+The framework is flexible and can accommodate various methods of determining
+the donor coefficients, such as:
 
 - Historical contribution analysis
 - Token holdings snapshots
@@ -70,30 +106,17 @@ The framework is flexible and can accommodate various methods of determining the
 
 By providing this level of customization, Alloha empowers communities to experiment with and optimize their funding mechanisms, leading to more equitable and effective public goods funding.
 
----
-
-For more information on how to use Alloha and contribute to the research, please refer to the [Documentation](#) and [Contribution Guidelines](#).
 
 
+## TEGR1
 
+This repo encompasses the Jupyter notebooks we have used in order to determine
+matching exponents for all individuals. We have used two Dune queries prepared
+before the fact and alpha round data to create the initial process, and have
+amended it now that the round data is available. You will find all the
+necessary information, statistics and process in the ./main.ipynb file.
 
-
-
-
-
-
-
-
-
-# TEC Matching Processing
-
-This repo encompasses the Jupyter notebooks we have used in order to determine matching exponents for all individuals.
-
-We have used two Dune queries prepared before the fact and alpha round data to create the initial process, and have amended it now that the round data is available.
-
-You will find all the necessary information, statistics and process in the ./main.ipynb file.
-
-## Notes
+### Notes
 
 - update matching score if:
   - holds 10 TEC
