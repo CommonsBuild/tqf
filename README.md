@@ -7,9 +7,7 @@ please refer to the [Documentation](#) and [Contribution Guidelines](#).
 This research repository is maintained by The Token Engineering Commons (TEC)
 to aid in the operation of the Token Engineering Grant Round (TEGRX) series
 which allocates a target annual $100,000USD funding to token engineering
-public goods projects via Quadratic Funding. 
-
-To learn more, read the following:    
+public goods projects via Quadratic Funding. To learn more, read the following:    
 https://medium.com/token-engineering-commons/expertise-and-quadratic-funding-bd4f0c5c3e23
 
 ## Quadratic Funding
@@ -19,27 +17,23 @@ distribution of matching funds across a set of public goods projects. The
 algorithm determines the funding outcome based off of peer to peer contributions
 that are made from citizens to public goods. Formally:
 
-$$
+```math
 \mathbf{F}_p = \left( \sum_{i=1}^{n} \sqrt{c_{ip}} \right)^2
-$$
+```
 
-Where $\mathbf{F}_p$ is the quadratic funding for project $p$ and $c_{ip}$ is the contribution made 
-by citizen $c_i$ to project $p$ where there are $n$ citizens.
+Where $`\mathbf{F}_{p}`$ is the quadratic funding for project $`p`$ and $`c_{ip}`$ is the contribution made 
+by citizen $`c_i`$ to project $`p`$ where there are $`n`$ citizens. In matrix notation, QF is an operation that maps a contributions matrix
+$`\mathbf{C} \in \mathbb{R}^{n \times m}`$ to a funding vector $`\mathbf{F} \in
+\mathbb{R}^{m}`$ given $`m`$ public goods projects. 
 
-In matrix notation, QF is an operation that maps a contributions matrix
-$\mathbf{C} \in \mathbb{R}^{n \times m}$ to a funding vector $\mathbf{F} \in
-\mathbb{R}^{m}$ given $m$ public goods projects. 
-
-$$
+```math
 \mathbf{F} = \left( \text{sum}\left( \sqrt{\mathbf{C}} \right) \right)^2
-$$
+```
 
 The contributions matrix is
 radicalized elementwise and then project columns are summed on axis 0. The
 resulting vector is squared elementwise to give the quadratic funding per
-project.
-
-The funding outcome is then normalized such that it sums to 1 and represents a
+project. The funding outcome is then normalized such that it sums to 1 and represents a
 distribution to be made by the matching pool.
 
 
@@ -47,30 +41,32 @@ distribution to be made by the matching pool.
 
 ### Contributor Boost Coefficient
 
-Tunable QF introduces a contributor boost coefficient $b_i$ for each citizen
-$c_i$  that is applied as a multiplicative factor to each donation $c_{ip}$ for
-each public good $p$, such that the resulting funding mechanism becomes:
+Tunable QF introduces a contributor boost coefficient $`b_i`$ for each citizen
+$`c_i`$  that is applied as a multiplicative factor to each donation $`c_{ip}`$ for
+each public good $`p`$, such that the resulting funding mechanism becomes:
 
 
-$$
+
+```math
 \mathbf{F}_p = \left( \sum_{i=1}^{n} \sqrt{b_i\cdot{c_{ip}}} \right)^2
-$$
+```
 
 
-In matrix notation, we are applying the boost vector $\mathbf{B} \in
-\mathbb{R}^{n}$ as a coefficient for the contribution matrix.
+In matrix notation, we are applying the boost vector $`\mathbf{B} \in
+\mathbb{R}^{n}`$ as a coefficient for the contribution matrix.
 
-$$
+
+```math
 \mathbf{F} = \left( \sqrt{\mathbf{B}^T}\cdot{\sqrt{\mathbf{C}}}  \right)^2
-$$
+```
 
 Notice above that we do not need the sum operator anymore due to the nature of vector matrix multiplication.
 
 
 ### Token Balances
 
-Consider a token distribution dataset as a vector $\mathbf{T} \in 
-\mathbb{Z}^{n+}$ such that $\mathbf{T_i}$ is the balance of $c_i$.
+Consider a token distribution dataset as a vector $`\mathbf{T} \in 
+\mathbb{Z}^{n+}`$ such that $`\mathbf{T_i}`$ is the balance of $`c_i`$.
 
 | Address                           | Balance |
 |-----------------------------------|---------|
