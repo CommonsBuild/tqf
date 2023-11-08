@@ -37,7 +37,7 @@ class DonationsDashboard(pm.Parameterized):
     @pm.depends('donations.dataset')
     def sankey_view(self):
         df = self.donations.dataset
-        sankey = hv.Sankey(df[['voter', 'grantAddress', 'amountUSD']])
+        sankey = hv.Sankey(df[['voter', 'Grant Name', 'amountUSD']])
         return sankey
 
     @pm.depends('donations.dataset')
@@ -46,7 +46,7 @@ class DonationsDashboard(pm.Parameterized):
 
         # Calculate Data per Project
         projects = (
-            df.groupby('grantAddress')
+            df.groupby('Grant Name')
             .apply(
                 lambda group: pd.Series(
                     {
@@ -87,13 +87,13 @@ class DonationsDashboard(pm.Parameterized):
             .apply(
                 lambda group: pd.Series(
                     {
-                        'project_count': group['grantAddress'].nunique(),
+                        'project_count': group['Grant Name'].nunique(),
                         'mean_donation': group['amountUSD'].mean(),
                         'median_donation': group['amountUSD'].median(),
                         'total_donation': group['amountUSD'].sum(),
                         'max_donation': group['amountUSD'].max(),
-                        'max_grantAddress': group.loc[
-                            group['amountUSD'].idxmax(), 'grantAddress'
+                        'max_grant': group.loc[
+                            group['amountUSD'].idxmax(), 'Grant Name'
                         ],
                         'donations': sorted(group['amountUSD'].tolist(), reverse=True),
                     }
@@ -118,7 +118,7 @@ class DonationsDashboard(pm.Parameterized):
     def contributions_matrix(self):
         df = self.donations.dataset
         contributions_matrix = df.pivot_table(
-            index='voter', columns='grantAddress', values='amountUSD', aggfunc='sum'
+            index='voter', columns='Grant Name', values='amountUSD', aggfunc='sum'
         )
         return contributions_matrix
 
@@ -133,13 +133,13 @@ class DonationsDashboard(pm.Parameterized):
         df = self.donations.dataset.replace(0, np.nan)
 
         df['voter'] = df['voter'].astype(str)
-        df['grantAddress'] = df['grantAddress'].astype(str)
+        df['Grant Name'] = df['Grant Name'].astype(str)
 
         # Create graph from the dataframe
         G = nx.from_pandas_edgelist(
             df,
             'voter',
-            'grantAddress',
+            'Grant Name',
             ['amountUSD'],
             create_using=nx.Graph(),
         )
@@ -157,7 +157,7 @@ class DonationsDashboard(pm.Parameterized):
                 G.nodes[node]['type'] = 'voter'
                 G.nodes[node]['outline_color'] = 'blue'  # Outline color for voters
             else:
-                G.nodes[node]['size'] = df[df['grantAddress'] == node][
+                G.nodes[node]['size'] = df[df['Grant Name'] == node][
                     'amountUSD'
                 ].sum()
                 G.nodes[node]['id'] = node
@@ -205,7 +205,7 @@ class DonationsDashboard(pm.Parameterized):
 
     def donation_groups_view(self):
         df = self.donations.dataset
-        plot = df.groupby(['grantAddress'])
+        plot = df.groupby(['Grant Name'])
         return plot
 
     @pm.depends('donations.dataset')

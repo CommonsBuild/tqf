@@ -5,6 +5,8 @@ import panel as pn
 import param as pm
 from bokeh.models import HoverTool
 
+from bokeh.models import NumeralTickFormatter
+
 pn.extension('tabulator')
 
 
@@ -51,16 +53,18 @@ class Donations(Dataset):
     file = pm.FileSelector(
         default='./app/input/vote_coefficients_input.csv',
         path='./app/input/*.csv',
+        constant=True,
+    )
+    grant_names_dataset = pm.Selector(
+        default='./app/input/tegr1_grants.csv',
+        objects=['./app/input/tegr1_grants.csv', './app/input/tegr2_grants.csv'],
+        constant=True,
     )
     dataset = pm.DataFrame(
         default=None,
         columns={'voter', 'amountUSD', 'grantAddress'},
         label='Donations Dataset',
-    )
-
-    grant_names_dataset = pm.Selector(
-        default='./app/input/tegr1_grants.csv',
-        objects=['./app/input/tegr1_grants.csv', './app/input/tegr2_grants.csv'],
+        precedence=-1,
     )
 
     @pm.depends('dataset', 'grant_names_dataset', watch=True, on_init=True)
@@ -80,6 +84,7 @@ class TokenDistribution(Dataset):
     file = pm.FileSelector(
         default=None,
         path='./app/input/*.csv',
+        constant=True,
     )
     dataset = pm.DataFrame(
         default=None, columns={'address', 'balance'}, label='Token Dataset'
@@ -92,18 +97,19 @@ class TokenDistribution(Dataset):
         )
 
         # Plot a scatter plot of TEC balances on a logy scale.
-        distribution_view = self.donations.dataset.hvplot.scatter(
+        distribution_view = self.dataset.hvplot.scatter(
             y='balance',
             yformatter=NumeralTickFormatter(format='0,0'),
             alpha=0.8,
             logy=True,
             hover_cols=['address', 'balance'],
-            title='TEC Token Holders Distribution Log Scale',
+            title='Token Distribution',
             tools=[hover],
             size=200,
             color='white',
             line_color='skyblue',
             xlabel='index',
+            shared_axes=False,
         )
 
         return distribution_view
@@ -113,6 +119,7 @@ class TEGR1_TEC(TokenDistribution):
     file = pm.FileSelector(
         default='./app/input/tec_holders.csv',
         path='./app/input/*.csv',
+        constant=True,
     )
 
 
@@ -120,6 +127,7 @@ class TEGR1_TEA(TokenDistribution):
     file = pm.FileSelector(
         default='./app/input/tea_holders_dune.csv',
         path='./app/input/*.csv',
+        constant=True,
     )
 
     @pm.depends('file', watch=True)
@@ -136,6 +144,7 @@ class TEGR2_TEC(TokenDistribution):
     file = pm.FileSelector(
         default='./app/input/tec_holders_tegr2.csv',
         path='./app/input/*.csv',
+        constant=True,
     )
 
 
@@ -143,6 +152,7 @@ class TEGR2_TEA(TokenDistribution):
     file = pm.FileSelector(
         default='./app/input/tea_holders_teg2.csv',
         path='./app/input/*.csv',
+        constant=True,
     )
 
     @pm.depends('file', watch=True)

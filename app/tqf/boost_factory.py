@@ -6,7 +6,7 @@ from .boost import Boost
 
 
 class BoostFactory(pm.Parameterized):
-    boost_template = pm.Selector(precedence=1)
+    boost_template = pm.Selector(precedence=-1)
     boosts = pm.List(default=[], class_=Boost, precedence=-1)
     new_boost = pm.Action(lambda self: self._new_boost())
     remove_boost = pm.Action(lambda self: self._remove_boost())

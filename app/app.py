@@ -5,7 +5,7 @@ import panel as pn
 import param as pm
 from icecream import ic
 from tqf.tegr1 import tegr1_app
-from tqf.tegr2 import tegr2_app
+# from tqf.tegr2 import tegr2_app
 from tqf.tqf_math import QuadraticFunding as TQFMath
 
 tqf_math = TQFMath()
@@ -37,19 +37,33 @@ pn.state.notifications.position = 'top-right'
 # ipython_thread.start()
 
 
+
+template = pn.template.VanillaTemplate(title='Tunable Quadratic Funding')
+
 class App(pm.Parameterized):
     def view(self):
         return pn.Tabs(
-            ('TEGR1', tegr1_app),
-            ('TEGR2', tegr2_app),
-            ('TEGR3', None),
-            ('Sim Data', None),
-            ('FDFPG', None),
-            ('TQF Math', tqf_math.view()),
-            active=1,
+            ('My Grant Rounds', pn.Tabs(
+                ('TEGR1', tegr1_app),
+                # ('TEGR2', tegr2_app),
+                active=0,
+                dynamic=True,
+            )),
+            ('Research Tools', pn.Tabs(
+                # ('Sim Data', None),
+                # ('FDFPG', None),
+                ('TQF Math', tqf_math.view()),
+                active=0,
+                dynamic=True,
+            )),
+            active=0,
             dynamic=True,
+            tabs_location='left',
         )
 
 
-App().view().servable()
+
+template.main.append(App().view())
+template.servable()
+
 # tegr1_app.servable()
