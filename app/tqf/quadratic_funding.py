@@ -8,16 +8,16 @@ import param as pm
 
 class TunableQuadraticFunding(pm.Parameterized):
 
-    donations = pm.Selector()
+    donations = pm.Selector(doc="Donations Dataset")
     boost_factory = pm.Selector()
     boosts = pm.DataFrame(precedence=-1)
     boost_coefficient = pm.Number(1, bounds=(0, 10), step=0.1)
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Magnitude(0.2, step=0.01)
-    qf = pm.DataFrame(precedence=1)
+    qf = pm.DataFrame(precedence=-1)
     boosted_donations = pm.DataFrame(precedence=-1)
-    boosted_qf = pm.DataFrame(precedence=1)
-    results = pm.DataFrame(precedence=1)
+    boosted_qf = pm.DataFrame(precedence=-1)
+    results = pm.DataFrame(precedence=-1)
 
     def _qf(self, donations_dataset, donation_column='amountUSD'):
         """Apply the quadratic algorithm."""
@@ -55,7 +55,6 @@ class TunableQuadraticFunding(pm.Parameterized):
         # Apply the Matching Pool
         qf['matching'] = qf['capped_distribution'] * self.matching_pool
 
-        # print(qf)
         return qf
 
     @pm.depends(
@@ -66,7 +65,6 @@ class TunableQuadraticFunding(pm.Parameterized):
         on_init=True,
     )
     def update_qf(self):
-        # print('----------------------------------------QFFF')
         self.qf = self._qf(self.donations.dataset)
 
     def view_qf_bar(self):
@@ -197,15 +195,18 @@ class TunableQuadraticFunding(pm.Parameterized):
         output.seek(0)
         return output
 
+    def view_results(self):
+        return self.results
+
     def view(self):
         results_download = pn.widgets.FileDownload(
             callback=self.get_results_csv,
-            filename='./app/output/results.csv',
+            filename='results.csv',
             button_type='primary',
         )
         boosted_donations_download = pn.widgets.FileDownload(
             callback=self.get_boosted_donations_csv,
-            filename='./app/output/boosted_donations.csv',
+            filename='boosted_donations.csv',
             button_type='primary',
         )
-        return pn.Column(self, results_download, boosted_donations_download)
+        return pn.Column(self, self.view_results, results_download, boosted_donations_download)

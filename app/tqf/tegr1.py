@@ -6,14 +6,14 @@ from .boost import Boost
 from .boost_factory import BoostFactory
 from .dataset import TEGR1_TEA, TEGR1_TEC, Donations
 from .donations_dashboard import DonationsDashboard
-from .quadratic_funding import TunableQuadraticFunding
 from .outcomes import Outcomes
+from .quadratic_funding import TunableQuadraticFunding
 
 pn.extension('tabulator')
 
 # TEGR1
 
-tegr1_donations = Donations(file='./app/input/vote_coefficients_input.csv')
+tegr1_donations = Donations(name='TEGR1 Donations', file='./app/input/vote_coefficients_input.csv')
 
 # Select which round to load donations for
 tegr1_donations_dashboard = DonationsDashboard(donations=tegr1_donations)
@@ -38,7 +38,7 @@ tegr1_tea_boost = Boost(
 )
 
 
-tegr1_boost_factory = BoostFactory(boost_template=tegr1_tec_boost)
+tegr1_boost_factory = BoostFactory(name="TEGR1 Boost Factory", boost_template=tegr1_tec_boost)
 tegr1_boost_factory.param['boost_template'].objects = [tegr1_tec_boost, tegr1_tea_boost]
 
 tegr1_qf = TunableQuadraticFunding(
@@ -61,8 +61,8 @@ tegr1_app = pn.Tabs(
     # ('Boost Tuning', tegr1_tec_boost.view()),
     ('Boost Factory', tegr1_boost_factory.view()),
     ('Tunable Quadradic Funding', tegr1_qf.view()),
-    ('Outcomes', outcomes.view()),
-    active=6,
+    # ('Outcomes', outcomes.view()),
+    active=4,
     dynamic=True,
 )
 
