@@ -1,10 +1,7 @@
 # Alloha
 ---
 
-For more information on how to use Alloha and contribute to the research,
-please refer to the [Documentation](#) and [Contribution Guidelines](#).
-
-This research repository is maintained by The Token Engineering Commons (TEC)
+This research repository is maintained by [The Token Engineering Commons (TEC)](https://twitter.com/tecmns/)
 to aid in the operation of the Token Engineering Grant Round (TEGRX) series
 which allocates a target annual $100,000USD funding to token engineering
 public goods projects via Quadratic Funding. 
@@ -130,3 +127,26 @@ necessary information, statistics and process in the ./main.ipynb file.
   - ever since the TE Round was announced and carried out, the $TEC price has stabilised and grown.
   - generate chart for unique holders
     https://dune.com/queries/2457553/4040451
+
+
+## Instructions For Running Alloha
+Dependency management is handled by [Poetry](https://python-poetry.org/). To
+install poetry follow the instructions provided on the website.
+
+To run this app locally follow the steps below:
+1. Clone the [repostory](https://github.com/CommonsBuild/alloha)
+```
+git clone git@github.com:CommonsBuild/alloha.git
+```
+2. Install the dependencies
+```
+cd alloha
+poetry install
+poetry shell
+```
+3. Run the app
+```
+panel serve app/app.py
+```
+
+
