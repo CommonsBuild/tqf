@@ -10,6 +10,20 @@ from bokeh.models import HoverTool
 pn.extension('tabulator')
 
 
+def color_based_on_eth_address(val):
+    # Use the first 6 characters after '0x' for the color
+    hex_color = f'#{val[2:8]}'
+
+    # Convert the hex color to an integer to determine if it's light or dark
+    bg_color = int(val[2:8], 16)
+
+    # Determine if background color is light or dark for text color
+    text_color = 'black' if bg_color > 0xFFFFFF / 2 else 'white'
+
+    # Return the CSS style with the calculated text color
+    return f'background-color: {hex_color}; color: {text_color};'
+
+
 class DonationsDashboard(pm.Parameterized):
     donations = pm.Selector(precedence=-1)
 
@@ -72,6 +86,7 @@ class DonationsDashboard(pm.Parameterized):
             projects,
             formatters={'donations': {'type': 'textarea', 'textAlign': 'left'}},
         )
+        projects_view.style.applymap(color_based_on_eth_address, subset='max_doner')
         return projects_view
 
     @pm.depends('donations.dataset')
@@ -112,6 +127,7 @@ class DonationsDashboard(pm.Parameterized):
             contributors,
             formatters={'donations': {'type': 'textarea', 'textAlign': 'left'}},
         )
+        contributors_view.style.applymap(color_based_on_eth_address, subset='voter')
         return contributors_view
 
     @pm.depends('donations.dataset', watch=True)
@@ -124,8 +140,12 @@ class DonationsDashboard(pm.Parameterized):
 
     @pm.depends('donations.dataset')
     def contributions_matrix_view(self):
-        contributions_matrix = self.contributions_matrix()
+        contributions_matrix = self.contributions_matrix().reset_index()
         contributions_matrix_view = pn.widgets.Tabulator(contributions_matrix)
+        contributions_matrix_view.style.applymap(
+            color_based_on_eth_address,
+            subset='voter',
+        )
         return contributions_matrix_view
 
     @pm.depends('donations.dataset')
@@ -157,9 +177,7 @@ class DonationsDashboard(pm.Parameterized):
                 G.nodes[node]['type'] = 'voter'
                 G.nodes[node]['outline_color'] = 'blue'  # Outline color for voters
             else:
-                G.nodes[node]['size'] = df[df['Grant Name'] == node][
-                    'amountUSD'
-                ].sum()
+                G.nodes[node]['size'] = df[df['Grant Name'] == node]['amountUSD'].sum()
                 G.nodes[node]['id'] = node
                 G.nodes[node]['shape'] = 'triangle'
                 G.nodes[node]['type'] = 'public_good'
