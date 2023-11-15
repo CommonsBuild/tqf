@@ -320,11 +320,16 @@ class DonationsDashboard(pm.Parameterized):
         # Create a color mapper with specified range
         color_mapper = LinearColorMapper(palette=RdYlGn, low=0, high=high_value)
 
+        print(public_goods_data)
+
         # Create a Points plot for the colorbar and hover information
+        public_goods_data = public_goods_data.rename(
+            columns={'Grant Name': 'grant_name', 'Total Donations': 'total_donations'}
+        )
         points_for_colorbar = hv.Points(
             public_goods_data,
             kdims=['x', 'y'],
-            vdims=['Grant Name', 'Total Donations', 'size'],
+            vdims=['grant_name', 'total_donations', 'size'],
         ).opts(
             size='size',
             marker='square',
@@ -348,23 +353,12 @@ class DonationsDashboard(pm.Parameterized):
             tools=[
                 HoverTool(
                     tooltips=[
-                        ('Grant Name', '@{Grant Name}'),
-                        ('Total Donations', '@{Total Donations}'),
+                        ('Grant Name', '@grant_name'),
+                        ('Total Donations', '$@total_donations{0,0.00}'),
                     ]
                 )
             ],
         )
-
-        # Define the fixed range for the colorbar
-        # fixed_min = (
-        #     -100
-        # )  # or another value that represents the minimum of your data range
-        # fixed_max = public_goods_data[
-        #     'Total Donations'
-        # ].max()  # assuming max_donation is calculated from your data
-        #
-        # # Create a color mapper with the fixed range
-        # color_mapper = LinearColorMapper(palette=RdYlGn, low=fixed_min, high=fixed_max)
 
         # Adjust colorbar with the fixed range
         points_for_colorbar = points_for_colorbar.opts(
