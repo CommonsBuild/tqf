@@ -7,17 +7,19 @@ import pandas as pd
 import panel as pn
 import param as pm
 from bokeh.models import (
+    AdaptiveTicker,
     BasicTicker,
     ColorBar,
     CustomJSTickFormatter,
     FixedTicker,
     HoverTool,
     LinearColorMapper,
+    LogTicker,
     PrintfTickFormatter,
 )
 from bokeh.palettes import RdYlGn as bokeh_RdYlGn
 
-RdYlGn = bokeh_RdYlGn[11][::-1]  # This reverses the chosen palette
+RdYlGn = bokeh_RdYlGn[10][::-1]  # This reverses the chosen palette
 
 pn.extension('tabulator')
 
@@ -298,25 +300,36 @@ class DonationsDashboard(pm.Parameterized):
         )
         public_goods_data.rename(columns={'amountUSD': 'Total Donations'}, inplace=True)
 
+        def calculate_size(donation_amount):
+            # Example logic for calculating size
+            # This can be adjusted based on how you want to scale the sizes
+            base_size = 10  # Base size for the points
+            scaling_factor = 0.01  # Scaling factor for donation amounts
+            return base_size + (donation_amount * scaling_factor)
+
         # All points have the same x-coordinate, y is the actual 'Total Donations'
         public_goods_data['x'] = 0
         public_goods_data['y'] = public_goods_data['Total Donations']
+        public_goods_data['size'] = public_goods_data['Total Donations'].apply(
+            lambda x: calculate_size(x)
+        )  # Define calculate_size based on your graph's logic
 
         # Create a Points plot for the colorbar and hover information
         points_for_colorbar = hv.Points(
-            public_goods_data, kdims=['x', 'y'], vdims=['Grant Name', 'Total Donations']
+            public_goods_data,
+            kdims=['x', 'y'],
+            vdims=['Grant Name', 'Total Donations', 'size'],
         ).opts(
-            size=5,
+            size=9,
             marker='square',
             color='y',
             line_color='black',
             cmap=RdYlGn,  # Assuming RdYlGn is your colormap variable
             colorbar=True,
-            width=100,
+            width=250,
             height=800,
             show_frame=False,
             xaxis=None,
-            yaxis=None,
             toolbar=None,
             show_legend=False,
             tools=[
@@ -329,24 +342,34 @@ class DonationsDashboard(pm.Parameterized):
             ],
         )
 
-        # Calculate min and max for the colorbar range
-        min_donation = public_goods_data['Total Donations'].min()
-        max_donation = public_goods_data['Total Donations'].max()
+        # Define the fixed range for the colorbar
+        fixed_min = (
+            -100
+        )  # or another value that represents the minimum of your data range
+        fixed_max = public_goods_data[
+            'Total Donations'
+        ].max()  # assuming max_donation is calculated from your data
 
-        # Adjust colorbar to reflect the actual range of public goods sizes
+        # Create a color mapper with the fixed range
+        color_mapper = LinearColorMapper(palette=RdYlGn, low=fixed_min, high=fixed_max)
+
+        # Adjust colorbar with the fixed range
         points_for_colorbar = points_for_colorbar.opts(
             hv.opts.Points(
                 colorbar=True,
+                cmap=RdYlGn,
                 colorbar_opts={
-                    'ticker': BasicTicker(),
+                    'color_mapper': color_mapper,
+                    'ticker': AdaptiveTicker(desired_num_ticks=10),
                     'formatter': PrintfTickFormatter(format='%d'),
                 },
             )
         )
+
         # Create the main graph plot without a colorbar
         main_graph_plot = plot.opts(
             hv.opts.Graph(
-                padding=0.1,
+                padding=0.01,
                 colorbar=False,
                 legend_position='right',
                 tools=[hover, 'tap'],
@@ -357,7 +380,7 @@ class DonationsDashboard(pm.Parameterized):
         # Combine the plots into a layout
         layout = (main_graph_plot + points_for_colorbar).opts(shared_axes=False)
 
-        return layout
+        return points_for_colorbar
 
     def donation_groups_view(self):
         donations_df = self.donations.dataset
