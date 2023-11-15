@@ -9,6 +9,8 @@ import param as pm
 from bokeh.models import (
     BasicTicker,
     ColorBar,
+    CustomJSTickFormatter,
+    FixedTicker,
     HoverTool,
     LinearColorMapper,
     PrintfTickFormatter,
@@ -220,7 +222,7 @@ class DonationsDashboard(pm.Parameterized):
                     donations_df['Grant Name'] == node
                 ]['amountUSD'].sum()
                 G.nodes[node]['id'] = node
-                G.nodes[node]['shape'] = 'triangle'
+                G.nodes[node]['shape'] = 'square'
                 G.nodes[node]['type'] = 'public_good'
                 G.nodes[node]['outline_color'] = 'black'  # Outline color for voters
                 G.nodes[node]['color'] = public_good_color_value
@@ -290,29 +292,57 @@ class DonationsDashboard(pm.Parameterized):
             title='Contributors and Public Goods Network',
         )
 
-        # Adjust the points_df to have dummy x and y values
-        points_df = pd.DataFrame(
-            {
-                'x': [0] * len(public_goods_sizes),
-                'y': [0] * len(public_goods_sizes),
-                'size': public_goods_sizes,
-            }
+        # Create a DataFrame for the Points plot with 'Grant Name' and 'Total Donations'
+        public_goods_data = (
+            donations_df.groupby('Grant Name')['amountUSD'].sum().reset_index()
         )
+        public_goods_data.rename(columns={'amountUSD': 'Total Donations'}, inplace=True)
 
-        # Create a Points plot for colorbar
-        points_for_colorbar = hv.Points(points_df, kdims=['x', 'y']).opts(
-            color='size',
-            cmap=RdYlGn,
+        # All points have the same x-coordinate, y is the actual 'Total Donations'
+        public_goods_data['x'] = 0
+        public_goods_data['y'] = public_goods_data['Total Donations']
+
+        # Create a Points plot for the colorbar and hover information
+        points_for_colorbar = hv.Points(
+            public_goods_data, kdims=['x', 'y'], vdims=['Grant Name', 'Total Donations']
+        ).opts(
+            size=5,
+            marker='square',
+            color='y',
+            line_color='black',
+            cmap=RdYlGn,  # Assuming RdYlGn is your colormap variable
             colorbar=True,
-            width=100,  # Narrow width for colorbar
+            width=100,
             height=800,
             show_frame=False,
             xaxis=None,
             yaxis=None,
             toolbar=None,
             show_legend=False,
+            tools=[
+                HoverTool(
+                    tooltips=[
+                        ('Grant Name', '@{Grant Name}'),
+                        ('Total Donations', '@{Total Donations}'),
+                    ]
+                )
+            ],
         )
 
+        # Calculate min and max for the colorbar range
+        min_donation = public_goods_data['Total Donations'].min()
+        max_donation = public_goods_data['Total Donations'].max()
+
+        # Adjust colorbar to reflect the actual range of public goods sizes
+        points_for_colorbar = points_for_colorbar.opts(
+            hv.opts.Points(
+                colorbar=True,
+                colorbar_opts={
+                    'ticker': BasicTicker(),
+                    'formatter': PrintfTickFormatter(format='%d'),
+                },
+            )
+        )
         # Create the main graph plot without a colorbar
         main_graph_plot = plot.opts(
             hv.opts.Graph(
@@ -325,14 +355,14 @@ class DonationsDashboard(pm.Parameterized):
         )
 
         # Combine the plots into a layout
-        layout = main_graph_plot + points_for_colorbar
+        layout = (main_graph_plot + points_for_colorbar).opts(shared_axes=False)
 
         return layout
 
-        def donation_groups_view(self):
-            donations_df = self.donations.dataset
-            plot = donations_df.groupby(['Grant Name'])
-            return plot
+    def donation_groups_view(self):
+        donations_df = self.donations.dataset
+        plot = donations_df.groupby(['Grant Name'])
+        return plot
 
     @pm.depends('donations.dataset')
     def view(self):
