@@ -168,10 +168,23 @@ class DonationsDashboard(pm.Parameterized):
         for u, v, d in G.edges(data=True):
             d['amountUSD'] = d['amountUSD'] / 40
 
+        # Test
+        voter_color_value = 1
+        public_good_color_value = 2
+        custom_cmap = {
+            voter_color_value: 'purple',
+            public_good_color_value: 'orange',
+            'default': 'lightgray',
+        }
+
+        def get_node_color(node):
+            return custom_cmap.get(G.nodes[node].get('color', 'default'), 'default')
+
         # Set node attributes
         for node in G.nodes():
             if node in df['voter'].unique():
                 G.nodes[node]['size'] = df[df['voter'] == node]['amountUSD'].sum()
+                G.nodes[node]['color'] = voter_color_value
                 G.nodes[node]['id'] = node
                 G.nodes[node]['shape'] = 'circle'
                 G.nodes[node]['type'] = 'voter'
@@ -182,6 +195,7 @@ class DonationsDashboard(pm.Parameterized):
                 G.nodes[node]['shape'] = 'triangle'
                 G.nodes[node]['type'] = 'public_good'
                 G.nodes[node]['outline_color'] = 'red'  # Outline color for voters
+                G.nodes[node]['color'] = public_good_color_value
 
         tooltips = [
             ('Id', '@id'),
@@ -196,7 +210,7 @@ class DonationsDashboard(pm.Parameterized):
             pos=nx.spring_layout(G, seed=69),
             node_size='size',
             node_shape='shape',
-            node_color='size',
+            node_color=[get_node_color(node) for node in G.nodes()],
             edge_width='amountUSD',
             node_label='index',
             node_line_color='outline_color',
