@@ -291,8 +291,7 @@ class DonationsDashboard(pm.Parameterized):
             cmap='viridis',
             width=800,
             height=800,
-            title='Contributors and Public Goods Network',
-        )
+        ).opts(hv.opts.Graph(title='Public Goods Contributions Network'))
 
         # Create a DataFrame for the Points plot with 'Grant Name' and 'Total Donations'
         public_goods_data = (
@@ -303,8 +302,8 @@ class DonationsDashboard(pm.Parameterized):
         def calculate_size(donation_amount):
             # Example logic for calculating size
             # This can be adjusted based on how you want to scale the sizes
-            base_size = 10  # Base size for the points
-            scaling_factor = 0.01  # Scaling factor for donation amounts
+            base_size = 8  # Base size for the points
+            scaling_factor = 0.02  # Scaling factor for donation amounts
             return base_size + (donation_amount * scaling_factor)
 
         # All points have the same x-coordinate, y is the actual 'Total Donations'
@@ -314,24 +313,38 @@ class DonationsDashboard(pm.Parameterized):
             lambda x: calculate_size(x)
         )  # Define calculate_size based on your graph's logic
 
+        # Assuming public_goods_data is your DataFrame
+        max_funding = public_goods_data['Total Donations'].max()
+        high_value = max_funding * 1.05  # 110% of the max funding
+
+        # Create a color mapper with specified range
+        color_mapper = LinearColorMapper(palette=RdYlGn, low=0, high=high_value)
+
         # Create a Points plot for the colorbar and hover information
         points_for_colorbar = hv.Points(
             public_goods_data,
             kdims=['x', 'y'],
             vdims=['Grant Name', 'Total Donations', 'size'],
         ).opts(
-            size=9,
+            size='size',
             marker='square',
             color='y',
             line_color='black',
-            cmap=RdYlGn,  # Assuming RdYlGn is your colormap variable
+            line_width=2,
+            cmap=color_mapper,  # Assuming RdYlGn is your colormap variable
             colorbar=True,
-            width=250,
+            width=300,
             height=800,
             show_frame=False,
             xaxis=None,
+            yaxis=None,
             toolbar=None,
             show_legend=False,
+            title='Public Goods Funding Outcomes',
+            ylim=(
+                -100,
+                high_value,
+            ),  # Assuming 'high_value' is your calculated upper limit
             tools=[
                 HoverTool(
                     tooltips=[
@@ -343,15 +356,15 @@ class DonationsDashboard(pm.Parameterized):
         )
 
         # Define the fixed range for the colorbar
-        fixed_min = (
-            -100
-        )  # or another value that represents the minimum of your data range
-        fixed_max = public_goods_data[
-            'Total Donations'
-        ].max()  # assuming max_donation is calculated from your data
-
-        # Create a color mapper with the fixed range
-        color_mapper = LinearColorMapper(palette=RdYlGn, low=fixed_min, high=fixed_max)
+        # fixed_min = (
+        #     -100
+        # )  # or another value that represents the minimum of your data range
+        # fixed_max = public_goods_data[
+        #     'Total Donations'
+        # ].max()  # assuming max_donation is calculated from your data
+        #
+        # # Create a color mapper with the fixed range
+        # color_mapper = LinearColorMapper(palette=RdYlGn, low=fixed_min, high=fixed_max)
 
         # Adjust colorbar with the fixed range
         points_for_colorbar = points_for_colorbar.opts(
@@ -359,7 +372,7 @@ class DonationsDashboard(pm.Parameterized):
                 colorbar=True,
                 cmap=RdYlGn,
                 colorbar_opts={
-                    'color_mapper': color_mapper,
+                    # 'color_mapper': color_mapper,
                     'ticker': AdaptiveTicker(desired_num_ticks=10),
                     'formatter': PrintfTickFormatter(format='%d'),
                 },
@@ -380,7 +393,7 @@ class DonationsDashboard(pm.Parameterized):
         # Combine the plots into a layout
         layout = (main_graph_plot + points_for_colorbar).opts(shared_axes=False)
 
-        return points_for_colorbar
+        return layout
 
     def donation_groups_view(self):
         donations_df = self.donations.dataset
