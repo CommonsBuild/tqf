@@ -13,7 +13,9 @@ pn.extension('tabulator')
 
 # TEGR1
 
-tegr1_donations = Donations(name='TEGR1 Donations', file='./app/input/vote_coefficients_input.csv')
+tegr1_donations = Donations(
+    name='TEGR1 Donations', file='./app/input/vote_coefficients_input.csv'
+)
 
 # Select which round to load donations for
 tegr1_donations_dashboard = DonationsDashboard(donations=tegr1_donations)
@@ -38,7 +40,9 @@ tegr1_tea_boost = Boost(
 )
 
 
-tegr1_boost_factory = BoostFactory(name="TEGR1 Boost Factory", boost_template=tegr1_tec_boost)
+tegr1_boost_factory = BoostFactory(
+    name='TEGR1 Boost Factory', boost_template=tegr1_tec_boost
+)
 tegr1_boost_factory.param['boost_template'].objects = [tegr1_tec_boost, tegr1_tea_boost]
 
 tegr1_qf = TunableQuadraticFunding(
@@ -51,18 +55,17 @@ tegr1_app = pn.Tabs(
     ('Donations', pn.Column(tegr1_donations.view(), tegr1_donations_dashboard.view())),
     (
         'Token Distribution',
-        pn.Row(
-            tegr1_tec_distribution.view   , tegr1_tec_distribution.view_distribution
-        ),
+        pn.Row(tegr1_tec_distribution.view, tegr1_tec_distribution.view_distribution),
     ),
-    ('TEA Token Distribution', pn.Row(
-        tegr1_tea_distribution.view, tegr1_tea_distribution.view_distribution
-    )),
+    (
+        'TEA Token Distribution',
+        pn.Row(tegr1_tea_distribution.view, tegr1_tea_distribution.view_distribution),
+    ),
     # ('Boost Tuning', tegr1_tec_boost.view()),
     ('Boost Factory', tegr1_boost_factory.view()),
     ('Tunable Quadradic Funding', tegr1_qf.view()),
     # ('Outcomes', outcomes.view()),
-    active=4,
+    active=0,
     dynamic=True,
 )
 

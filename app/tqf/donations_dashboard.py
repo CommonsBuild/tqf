@@ -1,3 +1,4 @@
+import colorcet as cc
 import holoviews as hv
 import hvplot.networkx as hvnx
 import networkx as nx
@@ -5,7 +6,16 @@ import numpy as np
 import pandas as pd
 import panel as pn
 import param as pm
-from bokeh.models import HoverTool
+from bokeh.models import (
+    BasicTicker,
+    ColorBar,
+    HoverTool,
+    LinearColorMapper,
+    PrintfTickFormatter,
+)
+from bokeh.palettes import RdYlGn as bokeh_RdYlGn
+
+RdYlGn = bokeh_RdYlGn[11][::-1]  # This reverses the chosen palette
 
 pn.extension('tabulator')
 
@@ -29,9 +39,11 @@ class DonationsDashboard(pm.Parameterized):
 
     @pm.depends('donations.dataset')
     def donor_view(self):
-        df = self.donations.dataset
+        donations_df = self.donations.dataset
         donor_vote_counts = (
-            df.groupby('voter').count()['id'].to_frame(name='number_of_donations')
+            donations_df.groupby('voter')
+            .count()['id']
+            .to_frame(name='number_of_donations')
         )
         histogram = donor_vote_counts.hvplot.hist(
             ylabel='Donor Count',
@@ -50,17 +62,17 @@ class DonationsDashboard(pm.Parameterized):
 
     @pm.depends('donations.dataset')
     def sankey_view(self):
-        df = self.donations.dataset
-        sankey = hv.Sankey(df[['voter', 'Grant Name', 'amountUSD']])
+        donations_df = self.donations.dataset
+        sankey = hv.Sankey(donations_df[['voter', 'Grant Name', 'amountUSD']])
         return sankey
 
     @pm.depends('donations.dataset')
     def projects_view(self):
-        df = self.donations.dataset
+        donations_df = self.donations.dataset
 
         # Calculate Data per Project
         projects = (
-            df.groupby('Grant Name')
+            donations_df.groupby('Grant Name')
             .apply(
                 lambda group: pd.Series(
                     {
@@ -94,11 +106,11 @@ class DonationsDashboard(pm.Parameterized):
         """
         Note, the following three terms are conflated: donor, contributor, and voter.
         """
-        df = self.donations.dataset
+        donations_df = self.donations.dataset
 
         # Calculate Data per Contributor
         contributors = (
-            df.groupby('voter')
+            donations_df.groupby('voter')
             .apply(
                 lambda group: pd.Series(
                     {
@@ -132,8 +144,8 @@ class DonationsDashboard(pm.Parameterized):
 
     @pm.depends('donations.dataset', watch=True)
     def contributions_matrix(self):
-        df = self.donations.dataset
-        contributions_matrix = df.pivot_table(
+        donations_df = self.donations.dataset
+        contributions_matrix = donations_df.pivot_table(
             index='voter', columns='Grant Name', values='amountUSD', aggfunc='sum'
         )
         return contributions_matrix
@@ -150,14 +162,16 @@ class DonationsDashboard(pm.Parameterized):
 
     @pm.depends('donations.dataset')
     def contributions_network_view(self):
-        df = self.donations.dataset.replace(0, np.nan)
+        # Replace nan values with 0
+        donations_df = self.donations.dataset.replace(0, np.nan)
 
-        df['voter'] = df['voter'].astype(str)
-        df['Grant Name'] = df['Grant Name'].astype(str)
+        # Explicitly set string columns as str
+        donations_df['voter'] = donations_df['voter'].astype(str)
+        donations_df['Grant Name'] = donations_df['Grant Name'].astype(str)
 
         # Create graph from the dataframe
         G = nx.from_pandas_edgelist(
-            df,
+            donations_df,
             'voter',
             'Grant Name',
             ['amountUSD'],
@@ -168,7 +182,7 @@ class DonationsDashboard(pm.Parameterized):
         for u, v, d in G.edges(data=True):
             d['amountUSD'] = d['amountUSD'] / 40
 
-        # Test
+        # Assigning custom colors per node type
         voter_color_value = 1
         public_good_color_value = 2
         custom_cmap = {
@@ -177,25 +191,68 @@ class DonationsDashboard(pm.Parameterized):
             'default': 'lightgray',
         }
 
-        def get_node_color(node):
-            return custom_cmap.get(G.nodes[node].get('color', 'default'), 'default')
+        # Calculate the total donation for each public good
+        total_donations_per_public_good = donations_df.groupby('Grant Name')[
+            'amountUSD'
+        ].sum()
+
+        # Find the max and min total donations for normalization
+        max_size = total_donations_per_public_good.max()
+        min_size = total_donations_per_public_good.min()
+
+        def get_hex_color(address):
+            hex_color = f'#{address[2:8]}'
+            return hex_color
 
         # Set node attributes
         for node in G.nodes():
-            if node in df['voter'].unique():
-                G.nodes[node]['size'] = df[df['voter'] == node]['amountUSD'].sum()
+            if node in donations_df['voter'].unique():
+                G.nodes[node]['size'] = donations_df[donations_df['voter'] == node][
+                    'amountUSD'
+                ].sum()
                 G.nodes[node]['color'] = voter_color_value
                 G.nodes[node]['id'] = node
                 G.nodes[node]['shape'] = 'circle'
                 G.nodes[node]['type'] = 'voter'
-                G.nodes[node]['outline_color'] = 'blue'  # Outline color for voters
+                G.nodes[node]['outline_color'] = get_hex_color(node)
             else:
-                G.nodes[node]['size'] = df[df['Grant Name'] == node]['amountUSD'].sum()
+                G.nodes[node]['size'] = donations_df[
+                    donations_df['Grant Name'] == node
+                ]['amountUSD'].sum()
                 G.nodes[node]['id'] = node
                 G.nodes[node]['shape'] = 'triangle'
                 G.nodes[node]['type'] = 'public_good'
-                G.nodes[node]['outline_color'] = 'red'  # Outline color for voters
+                G.nodes[node]['outline_color'] = 'black'  # Outline color for voters
                 G.nodes[node]['color'] = public_good_color_value
+
+        # Now, calculate max_size and min_size based on the node attributes
+        public_goods_sizes = [
+            size
+            for node, size in G.nodes(data='size')
+            if G.nodes[node]['type'] == 'public_good'
+        ]
+        max_size = max(public_goods_sizes)
+        min_size = min(public_goods_sizes)
+
+        # Normalize function
+        def normalize_size(size):
+            if max_size == min_size:
+                return 0.5
+            return (size - min_size) / (max_size - min_size)
+
+        # Updated color mapping function
+        def get_node_color(node):
+            if G.nodes[node]['type'] == 'voter':
+                return get_hex_color(node)
+            elif G.nodes[node]['type'] == 'public_good':
+                size = G.nodes[node]['size']
+                normalized = normalize_size(size)
+                palette_length = len(
+                    bokeh_RdYlGn[11]
+                )  # Choose the palette length (11 is an example)
+                return bokeh_RdYlGn[11][::-1][int(normalized * (palette_length - 1))]
+            else:
+                return custom_cmap.get(G.nodes[node].get('color', 'default'), 'default')
 
         tooltips = [
             ('Id', '@id'),
@@ -203,6 +260,15 @@ class DonationsDashboard(pm.Parameterized):
             ('Type', '@type'),
         ]
         hover = HoverTool(tooltips=tooltips)
+
+        # Create a dictionary to store the color of each node
+        node_colors = {node: get_node_color(node) for node in G.nodes()}
+
+        # Assign edge colors based on the color of the source (or voter) node
+        for u, v, d in G.edges(data=True):
+            d['color'] = node_colors[
+                v
+            ]  # or node_colors[v] depending on your preference
 
         # Visualization
         plot = hvnx.draw(
@@ -215,7 +281,7 @@ class DonationsDashboard(pm.Parameterized):
             node_label='index',
             node_line_color='outline_color',
             node_line_width=2,
-            edge_color='amountUSD',
+            edge_color='color',
             edge_alpha=0.8,
             node_alpha=0.95,
             cmap='viridis',
@@ -224,21 +290,49 @@ class DonationsDashboard(pm.Parameterized):
             title='Contributors and Public Goods Network',
         )
 
-        plot.opts(
+        # Adjust the points_df to have dummy x and y values
+        points_df = pd.DataFrame(
+            {
+                'x': [0] * len(public_goods_sizes),
+                'y': [0] * len(public_goods_sizes),
+                'size': public_goods_sizes,
+            }
+        )
+
+        # Create a Points plot for colorbar
+        points_for_colorbar = hv.Points(points_df, kdims=['x', 'y']).opts(
+            color='size',
+            cmap=RdYlGn,
+            colorbar=True,
+            width=100,  # Narrow width for colorbar
+            height=800,
+            show_frame=False,
+            xaxis=None,
+            yaxis=None,
+            toolbar=None,
+            show_legend=False,
+        )
+
+        # Create the main graph plot without a colorbar
+        main_graph_plot = plot.opts(
             hv.opts.Graph(
                 padding=0.1,
-                colorbar=True,
+                colorbar=False,
                 legend_position='right',
                 tools=[hover, 'tap'],
             ),
             hv.opts.Nodes(line_color='outline_color', line_width=5, tools=[hover]),
         )
-        return plot
 
-    def donation_groups_view(self):
-        df = self.donations.dataset
-        plot = df.groupby(['Grant Name'])
-        return plot
+        # Combine the plots into a layout
+        layout = main_graph_plot + points_for_colorbar
+
+        return layout
+
+        def donation_groups_view(self):
+            donations_df = self.donations.dataset
+            plot = donations_df.groupby(['Grant Name'])
+            return plot
 
     @pm.depends('donations.dataset')
     def view(self):
@@ -247,11 +341,11 @@ class DonationsDashboard(pm.Parameterized):
             pn.Tabs(
                 ('Projects', self.projects_view),
                 ('Contributors', self.contributors_view),
-                ('Contributions Matrix', self.contributions_matrix_view),
                 ('Contributions Network', self.contributions_network_view),
+                # ('Contributions Matrix', self.contributions_matrix_view),
                 # ('Donor Donation Counts', self.donor_view),
                 # ('Sankey', self.sankey_view),
-                active=3,
+                active=2,
                 dynamic=True,
             ),
         )
