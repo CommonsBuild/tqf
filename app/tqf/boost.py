@@ -281,7 +281,7 @@ class Boost(pm.Parameterized):
             pn.Column(
                 self.view_signal,
                 self.view_distribution,
-                # self.view_boost,
+                self.view_boost,
             ),
         )
 

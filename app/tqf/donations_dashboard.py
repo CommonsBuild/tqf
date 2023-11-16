@@ -357,8 +357,6 @@ class DonationsDashboard(pm.Parameterized):
         # Create a color mapper with specified range
         color_mapper = LinearColorMapper(palette=RdYlGn, low=0, high=high_value)
 
-        print(public_goods_data)
-
         # Create a Points plot for the colorbar and hover information
         public_goods_data = public_goods_data.rename(
             columns={'Grant Name': 'grant_name', 'Total Donations': 'total_donations'}
@@ -432,8 +430,22 @@ class DonationsDashboard(pm.Parameterized):
             points_for_colorbar.opts(width=plot_width) * scatter_labels
         )
 
+        # bars_with_colorbar = public_goods_data.hvplot.bar(
+        #     y='total_donations',
+        #     x='grant_name',
+        #     color='total_donations',
+        #     cmap=RdYlGn,
+        #     width=300,
+        #     height=1000,
+        #     sort='total_donations',
+        #     rot=90,
+        # )
+
         # Combine the plots into a layout
-        layout = (main_graph_plot + points_for_colorbar).opts(shared_axes=False)
+        layout = (
+            main_graph_plot.opts(shared_axes=False)
+            + points_for_colorbar.opts(shared_axes=False)
+        ).opts(shared_axes=False)
 
         return layout
 

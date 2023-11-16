@@ -3,9 +3,7 @@ import json
 import pandas as pd
 import panel as pn
 import param as pm
-from bokeh.models import HoverTool
-
-from bokeh.models import NumeralTickFormatter
+from bokeh.models import HoverTool, NumeralTickFormatter
 
 pn.extension('tabulator')
 
@@ -97,19 +95,24 @@ class TokenDistribution(Dataset):
         )
 
         # Plot a scatter plot of TEC balances on a logy scale.
-        distribution_view = self.dataset.hvplot.scatter(
-            y='balance',
-            yformatter=NumeralTickFormatter(format='0,0'),
-            alpha=0.8,
-            logy=True,
-            hover_cols=['address', 'balance'],
-            title='Token Distribution',
-            tools=[hover],
-            size=200,
-            color='white',
-            line_color='skyblue',
-            xlabel='index',
-            shared_axes=False,
+        distribution_view = (
+            self.dataset.sort_values('balance', ascending=False)
+            .reset_index(drop=True)
+            .hvplot.scatter(
+                y='balance',
+                x='index',
+                yformatter=NumeralTickFormatter(format='0,0'),
+                alpha=0.8,
+                logy=True,
+                hover_cols=['address', 'balance'],
+                title=self.name,
+                tools=[hover],
+                size=200,
+                color='white',
+                line_color='skyblue',
+                xlabel='index',
+                shared_axes=False,
+            )
         )
 
         return distribution_view
