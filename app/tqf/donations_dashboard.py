@@ -274,10 +274,13 @@ class DonationsDashboard(pm.Parameterized):
                 v
             ]  # or node_colors[v] depending on your preference
 
+        # Graph Layout Position
+        pos = nx.spring_layout(G, seed=69)
+
         # Visualization
         plot = hvnx.draw(
             G,
-            pos=nx.spring_layout(G, seed=69),
+            pos=pos,
             node_size='size',
             node_shape='shape',
             node_color=[get_node_color(node) for node in G.nodes()],
@@ -292,6 +295,40 @@ class DonationsDashboard(pm.Parameterized):
             width=800,
             height=800,
         ).opts(hv.opts.Graph(title='Public Goods Contributions Network'))
+
+        # Create the main graph plot without a colorbar
+        main_graph_plot = plot.opts(
+            hv.opts.Graph(
+                padding=0.01,
+                colorbar=False,
+                legend_position='right',
+                tools=[hover, 'tap'],
+            ),
+            hv.opts.Nodes(line_color='outline_color', line_width=5, tools=[hover]),
+        )
+
+        # Adjust the code to create a DataFrame for labels
+        label_data = []
+        for node, data in G.nodes(data=True):
+            if data.get('type') == 'public_good':
+                pos = nx.spring_layout(G, seed=69)[
+                    node
+                ]  # Adjust the position calculation as needed
+                label_data.append({'x': pos[0], 'y': pos[1], 'label': data['id']})
+
+        # Convert to DataFrame
+        label_df = pd.DataFrame(label_data)
+
+        # Adjust label positions (e.g., move them to the right)
+        label_df['x'] += 0  # Adjust this value as needed
+
+        # Create labels using the DataFrame
+        labels = hv.Labels(label_df, kdims=['x', 'y'], vdims='label').opts(
+            text_font_size='10pt'
+        )
+
+        # Overlay labels on the network graph
+        main_graph_plot = main_graph_plot * labels
 
         # Create a DataFrame for the Points plot with 'Grant Name' and 'Total Donations'
         public_goods_data = (
@@ -373,15 +410,26 @@ class DonationsDashboard(pm.Parameterized):
             )
         )
 
-        # Create the main graph plot without a colorbar
-        main_graph_plot = plot.opts(
-            hv.opts.Graph(
-                padding=0.01,
-                colorbar=False,
-                legend_position='right',
-                tools=[hover, 'tap'],
-            ),
-            hv.opts.Nodes(line_color='outline_color', line_width=5, tools=[hover]),
+        # Define a fixed offset for scatter point labels
+        scatter_label_offset_x = 0  # Adjust this value as needed
+        scatter_label_offset_y = 0.0   # Y offset, if needed
+
+        # Create a DataFrame for labels with positions adjusted
+        label_data = public_goods_data.copy()
+        label_data['x'] = label_data['x'] + scatter_label_offset_x
+        label_data['y'] = label_data['y'] + scatter_label_offset_y
+
+        # Create labels for scatter points
+        scatter_labels = hv.Labels(
+            label_data, kdims=['x', 'y'], vdims=['grant_name']
+        ).opts(text_font_size='10pt')
+
+        # Adjust width of the scatter plot to accommodate labels and colorbar
+        plot_width = 400  # Adjust this value as needed to fit labels
+
+        # Update the scatter plot with new width and overlay labels
+        points_for_colorbar = (
+            points_for_colorbar.opts(width=plot_width) * scatter_labels
         )
 
         # Combine the plots into a layout
@@ -402,7 +450,7 @@ class DonationsDashboard(pm.Parameterized):
                 ('Projects', self.projects_view),
                 ('Contributors', self.contributors_view),
                 ('Contributions Network', self.contributions_network_view),
-                # ('Contributions Matrix', self.contributions_matrix_view),
+                ('Contributions Matrix', self.contributions_matrix_view),
                 # ('Donor Donation Counts', self.donor_view),
                 # ('Sankey', self.sankey_view),
                 active=2,
