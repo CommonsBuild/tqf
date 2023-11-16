@@ -52,8 +52,11 @@ class BoostFactory(pm.Parameterized):
             boost_outputs['Total_Boost'] = boost_outputs[
                 [col for col in boost_outputs.columns if 'Boost' in col]
             ].sum(axis=1)
+        boost_outputs = boost_outputs.rename(
+            {'balance': 'balance_0', 'Boost': 'Boost_0'}, axis=1
+        )
         boost_outputs = boost_outputs.sort_values(
-            ['Total_Boost', 'balance'], ascending=False
+            ['Total_Boost', 'balance_0'], ascending=False
         )
         return boost_outputs
 

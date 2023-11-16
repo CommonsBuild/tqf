@@ -149,7 +149,11 @@ class Boost(pm.Parameterized):
         distribution_view = (
             self.distribution.sort_values(ascending=False)
             .reset_index(drop=True)
-            .hvplot.step(ylim=(-0.01, self.boost_factor + 0.01), title='Boost Factor')
+            .hvplot.step(
+                ylim=(-0.01, self.boost_factor + 0.01),
+                title='Boost Factor',
+                ylabel='boost',
+            )
             .opts(
                 shared_axes=False,
                 yformatter=NumeralTickFormatter(format='0.00'),
@@ -161,16 +165,11 @@ class Boost(pm.Parameterized):
 
     @pm.depends('signal', 'token_logy')
     def view_signal(self):
-        signal_view = (
-            self.signal.sort_values(ascending=False)
-            .reset_index(drop=True)
-            .hvplot.step(logy=self.token_logy, title='Token Balance')
-            .opts(
-                shared_axes=False,
-                yformatter=NumeralTickFormatter(format='0.a'),
-                width=650,
-                height=320,
-            )
+        signal_view = self.input.view_distribution().opts(
+            shared_axes=False,
+            yformatter=NumeralTickFormatter(format='0.a'),
+            width=650,
+            height=320,
         )
         return signal_view
 
@@ -281,7 +280,7 @@ class Boost(pm.Parameterized):
             pn.Column(
                 self.view_signal,
                 self.view_distribution,
-                self.view_boost,
+                # self.view_boost,
             ),
         )
 

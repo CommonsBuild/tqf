@@ -105,11 +105,11 @@ class DonationsDashboard(pm.Parameterized):
         projects_view.style.applymap(color_based_on_eth_address, subset='max_doner')
         return projects_view
 
-    @pm.depends('donations.dataset')
-    def contributors_view(self):
+    def contributor_dataset(self):
         """
         Note, the following three terms are conflated: donor, contributor, and voter.
         """
+
         donations_df = self.donations.dataset
 
         # Calculate Data per Contributor
@@ -132,6 +132,13 @@ class DonationsDashboard(pm.Parameterized):
             )
             .reset_index()
         )
+
+        return contributors
+
+    @pm.depends('donations.dataset')
+    def contributors_view(self):
+
+        contributors = self.contributor_dataset()
 
         # Format the donations list
         contributors['donations'] = contributors['donations'].apply(
