@@ -87,6 +87,7 @@ class TokenDistribution(Dataset):
     dataset = pm.DataFrame(
         default=None, columns={'address', 'balance'}, label='Token Dataset'
     )
+    logy = pm.Boolean(True)
 
     def view_distribution(self):
         # Use the Bokeh Hover Tool to show formatted numbers in the hover tooltip for balances
@@ -103,7 +104,7 @@ class TokenDistribution(Dataset):
                 x='index',
                 yformatter=NumeralTickFormatter(format='0,0'),
                 alpha=0.8,
-                logy=True,
+                logy=self.logy,
                 hover_cols=['address', 'balance'],
                 title=self.name,
                 tools=[hover],
@@ -137,10 +138,11 @@ class TEGR1_TEA(TokenDistribution):
     def load_file(self):
         """
         TEA Data might have 'wallet' field. If it does we remap it to 'address'.
+        It's also not sorted so we sort it.
         """
         df = pd.read_csv(self.file)
         df.rename({'wallet': 'address'}, axis=1, inplace=True)
-        self.dataset = df
+        self.dataset = df.sort_values('balance', ascending=False).reset_index(drop=True)
 
 
 class TEGR2_TEC(TokenDistribution):
@@ -165,4 +167,4 @@ class TEGR2_TEA(TokenDistribution):
         """
         df = pd.read_csv(self.file)
         df.rename({'wallet': 'address'}, axis=1, inplace=True)
-        self.dataset = df
+        self.dataset = df.sort_values('balance', ascending=False).reset_index(drop=True)

@@ -20,8 +20,8 @@ tegr1_donations = Donations(
 # Select which round to load donations for
 tegr1_donations_dashboard = DonationsDashboard(donations=tegr1_donations)
 
-tegr1_tec_distribution = TEGR1_TEC(name='TEC Token')
-tegr1_tea_distribution = TEGR1_TEA(name='TEA Credentials')
+tegr1_tec_distribution = TEGR1_TEC(name='TEC Token', logy=True)
+tegr1_tea_distribution = TEGR1_TEA(name='TEA Credentials', logy=False)
 
 
 tegr1_tec_boost = Boost(
@@ -37,6 +37,7 @@ tegr1_tea_boost = Boost(
     input=tegr1_tea_distribution,
     transformation='Threshold',
     threshold=1,
+    token_logy=False,
 )
 
 

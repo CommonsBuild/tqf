@@ -4,6 +4,10 @@ import pandas as pd
 import panel as pn
 import param as pm
 from bokeh.models import HoverTool, NumeralTickFormatter
+from icecream import ic
+
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
 
 
 def color_based_on_eth_address(val):
@@ -29,7 +33,7 @@ class Outcomes(pm.Parameterized):
     def view_boosts(self):
         return self.tqf.boosts
 
-    def view_sme(self):
+    def view_sme_tables(self):
         collected_boosts = self.boost_factory.collect_boosts()
         contributors = self.donations_dashboard.contributor_dataset()
 
@@ -58,47 +62,61 @@ class Outcomes(pm.Parameterized):
         return pn.Column(*charts)
 
     def view_sme_tokens(self):
+        # The boost factory output dataset for total boosts
         collected_boosts = self.boost_factory.collect_boosts()
-        contributors = self.donations_dashboard.contributor_dataset()
+        print(collected_boosts.dtypes)
 
+        # Adding SME colors to the token distribution
         charts = []
         for i, boost in enumerate(self.boost_factory.boosts):
-            chart_data = (
-                collected_boosts[collected_boosts[f'balance_{i}'] > 0]
+            # Chart 1 is the token distribution chart on the boost.
+            chart1 = boost.view_signal()
+
+            # Chart 2 is inner merge of the contributors dataset and addresses that have positive Boost_i from collected boosts.
+            collected_boost = collected_boosts[collected_boosts[f'Boost_{i}'] > 0]
+            print(collected_boost)
+            chart2_data = (
+                collected_boost.merge(
+                    boost.input.dataset.reset_index(),
+                    how='inner',
+                    left_on='address',
+                    right_on='address',
+                )
                 .merge(
-                    contributors.reset_index(),
+                    self.donations_dashboard.contributor_dataset(),
                     how='inner',
                     left_on='address',
                     right_on='voter',
                 )
-                .drop('address', axis=1)
+                .rename({'index': 'x'}, axis=1)
             )
 
-            chart_data['color'] = chart_data['voter'].apply(
+            chart2_data['color'] = chart2_data['address'].apply(
                 lambda x: color_based_on_eth_address(x).split(';')[0].split()[1]
             )
 
-            chart1 = boost.view_signal()
             hover = HoverTool(
-                tooltips=[('address', '@address'), ('balance', '@balance{0.00}')]
+                tooltips=[('address', '@address'), ('balance', f'@balance_{i}{{0.00}}')]
             )
-            # chart2 = chart_data.hvplot.scatter(
-            #     y='balance',
-            #     x='index',
-            #     yformatter=NumeralTickFormatter(format='0,0'),
-            #     alpha=0.8,
-            #     logy=True,
-            #     hover_cols=['address', 'balance'],
-            #     title=self.name,
-            #     tools=[hover],
-            #     size=200,
-            #     color='color',
-            #     line_color='skyblue',
-            #     xlabel='index',
-            #     shared_axes=False,
-            # )
+            print(chart2_data[['x', f'balance_{i}', 'color', 'address']])
+            # ic(chart2_data.columns)
+            chart2 = chart2_data.rename({'index': 'x'}, axis=1).hvplot.scatter(
+                y=f'balance_{i}',
+                x='x',
+                yformatter=NumeralTickFormatter(format='0,0'),
+                alpha=0.8,
+                logy=True,
+                hover_cols=['address', 'balance'],
+                title=self.name,
+                tools=[hover],
+                size=1000,
+                color='color',
+                line_color='skyblue',
+                xlabel='index',
+                shared_axes=False,
+            )
 
-            charts.append(chart1)  # * chart2)
+            charts.append((chart1 * chart2).opts(shared_axes=False))
 
         return pn.Row(*charts)
 
@@ -109,7 +127,7 @@ class Outcomes(pm.Parameterized):
                 'Subject Matter Expertise',
                 pn.Column(
                     self.view_sme_tokens(),
-                    self.view_sme(),
+                    self.view_sme_tables(),
                 ),
             )
         )
