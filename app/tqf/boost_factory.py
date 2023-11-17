@@ -63,13 +63,13 @@ class BoostFactory(pm.Parameterized):
     def view(self):
         return pn.Row(self, self.boosts_view, self.collect_boosts)
 
-    @pm.depends('boosts', on_init=True)
-    def view_outcomes(self):
-        boosts = []
-
-        for boost in self.boosts:
-            boost_view = boost.input.view_distribution
-            if boost_view:
-                boosts.append(boost_view)
-
-        return pn.Row(*boosts)
+    # @pm.depends('boosts', on_init=True)
+    # def view_outcomes(self):
+    #     boosts = []
+    #
+    #     for boost in self.boosts:
+    #         boost_view = boost.input.view_distribution
+    #         if boost_view:
+    #             boosts.append(boost_view)
+    #
+    #     return pn.Row(*boosts)

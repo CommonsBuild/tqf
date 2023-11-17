@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import panel as pn
 import param as pm
+from bokeh.models import HoverTool, NumeralTickFormatter
 
 
 def color_based_on_eth_address(val):
@@ -30,16 +31,9 @@ class Outcomes(pm.Parameterized):
 
     def view_sme(self):
         collected_boosts = self.boost_factory.collect_boosts()
-        boost_cols = [c for c in collected_boosts.columns if 'Boost_' in c]
-        balance_cols = [c for c in collected_boosts.columns if 'balance' in c]
-        cols_list = list(zip(['address'] * len(balance_cols), balance_cols, boost_cols))
-
-        donations = self.donations_dashboard.donations.dataset
-
-        charts = []
-
         contributors = self.donations_dashboard.contributor_dataset()
 
+        charts = []
         for i, boost in enumerate(self.boost_factory.boosts):
             chart_data = (
                 collected_boosts[collected_boosts[f'balance_{i}'] > 0]
@@ -63,12 +57,60 @@ class Outcomes(pm.Parameterized):
 
         return pn.Column(*charts)
 
+    def view_sme_tokens(self):
+        collected_boosts = self.boost_factory.collect_boosts()
+        contributors = self.donations_dashboard.contributor_dataset()
+
+        charts = []
+        for i, boost in enumerate(self.boost_factory.boosts):
+            chart_data = (
+                collected_boosts[collected_boosts[f'balance_{i}'] > 0]
+                .merge(
+                    contributors.reset_index(),
+                    how='inner',
+                    left_on='address',
+                    right_on='voter',
+                )
+                .drop('address', axis=1)
+            )
+
+            chart_data['color'] = chart_data['voter'].apply(
+                lambda x: color_based_on_eth_address(x).split(';')[0].split()[1]
+            )
+
+            chart1 = boost.view_signal()
+            hover = HoverTool(
+                tooltips=[('address', '@address'), ('balance', '@balance{0.00}')]
+            )
+            # chart2 = chart_data.hvplot.scatter(
+            #     y='balance',
+            #     x='index',
+            #     yformatter=NumeralTickFormatter(format='0,0'),
+            #     alpha=0.8,
+            #     logy=True,
+            #     hover_cols=['address', 'balance'],
+            #     title=self.name,
+            #     tools=[hover],
+            #     size=200,
+            #     color='color',
+            #     line_color='skyblue',
+            #     xlabel='index',
+            #     shared_axes=False,
+            # )
+
+            charts.append(chart1)  # * chart2)
+
+        return pn.Row(*charts)
+
     def view(self):
         donations_view = self.donations_dashboard.view()
         donations_view[1].append(
             (
                 'Subject Matter Expertise',
-                pn.Column(self.boost_factory.view_outcomes(), self.view_sme()),
+                pn.Column(
+                    self.view_sme_tokens(),
+                    self.view_sme(),
+                ),
             )
         )
         donations_view[1].active = len(donations_view[1]) - 1
@@ -79,12 +121,7 @@ class Outcomes(pm.Parameterized):
                 self.tqf.param['matching_pool'],
                 self.tqf.param['matching_percentage_cap'],
             ),
-            pn.Column(
-                # self.boost_factory.view_outcomes(),
-                # pd.DataFrame([-1, 0, 1]).hvplot.scatter(),
-                # self.donations_dashboard.view().append(('Test', 'Test')),
-                donations_view
-            ),
+            pn.Column(donations_view),
         )
         # Append a layout to the main area, to demonstrate the list-like API
         return view

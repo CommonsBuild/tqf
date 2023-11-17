@@ -191,7 +191,7 @@ class DonationsDashboard(pm.Parameterized):
 
         # Modify edge width to be the donation size divided by 10
         for u, v, d in G.edges(data=True):
-            d['amountUSD'] = d['amountUSD'] / 40
+            d['amountUSD'] = 0.2 + d['amountUSD'] / 40
 
         # Assigning custom colors per node type
         voter_color_value = 1
