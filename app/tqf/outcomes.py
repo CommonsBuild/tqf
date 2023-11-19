@@ -131,7 +131,7 @@ class Outcomes(pm.Parameterized):
                 ),
             )
         )
-        donations_view[1].active = len(donations_view[1]) - 1
+        # donations_view[1].active = len(donations_view[1]) - 1
 
         view = pn.Row(
             pn.Column(

@@ -1,3 +1,5 @@
+from math import log
+
 import colorcet as cc
 import holoviews as hv
 import hvplot.networkx as hvnx
@@ -16,10 +18,14 @@ from bokeh.models import (
     LinearColorMapper,
     LogTicker,
     PrintfTickFormatter,
+    TickFormatter,
 )
+from bokeh.palettes import Greens
 from bokeh.palettes import RdYlGn as bokeh_RdYlGn
+from bokeh.transform import log_cmap
 
-RdYlGn = bokeh_RdYlGn[10][::-1]  # This reverses the chosen palette
+RdYlGn = bokeh_RdYlGn[11][::-1]  # This reverses the chosen palette
+Greens = Greens[256][::-1]
 
 pn.extension('tabulator')
 
@@ -164,12 +170,85 @@ class DonationsDashboard(pm.Parameterized):
     @pm.depends('donations.dataset')
     def contributions_matrix_view(self):
         contributions_matrix = self.contributions_matrix().reset_index()
-        contributions_matrix_view = pn.widgets.Tabulator(contributions_matrix)
+        numeric_columns = contributions_matrix.select_dtypes(include=['number']).columns
+        contributions_matrix_view = pn.widgets.Tabulator(
+            contributions_matrix,
+            widths={col: 120 for col in numeric_columns},
+            aggregators={col: 'sum' for col in numeric_columns},
+        )
         contributions_matrix_view.style.applymap(
             color_based_on_eth_address,
             subset='voter',
         )
+        # Set the minimum and maximum values for the colormap
+        min_value = contributions_matrix[numeric_columns].replace(0, np.nan).min().min()
+        max_value = contributions_matrix[numeric_columns].max().max()
+
+        # Create the logarithmic color mapper
+        log_mapper = log_cmap('value', palette=Greens, low=min_value, high=max_value)
+
+        # Define the coloring function with text color adjustment
+        def color_cell(cell_value):
+            if (cell_value <= 0) or np.isnan(cell_value):
+                return 'background-color: white; color: black;'
+            # Normalize the logarithmic value and map it to the reversed Greens palette
+            normalized_value = (log(cell_value) - log(min_value)) / (
+                log(max_value) - log(min_value)
+            )
+            color_index = int(normalized_value * (len(Greens) - 1))
+
+            # Determine text color based on background darkness
+            text_color = 'white' if color_index > len(Greens) // 2 else 'black'
+
+            return f'background-color: {Greens[color_index]}; color: {text_color};'
+
+        for col in numeric_columns:
+            contributions_matrix_view.style.applymap(color_cell, subset=[col])
+
         return contributions_matrix_view
+
+    @pm.depends('donations.dataset')
+    def contributions_matrix_heatmap_view(self):
+        contributions_matrix = (
+            self.contributions_matrix()
+            .reset_index()
+            .replace(np.nan, 0)
+            .set_index('voter')
+        )
+
+        heatmap = (
+            (contributions_matrix + 1)
+            .hvplot.heatmap(
+                title='Contributions Matrix',
+                cmap='Greens',
+                clim=(1, contributions_matrix.max().max()),
+                fontscale=1.2,
+                width=80 * contributions_matrix.columns.nunique(),
+                height=20 * contributions_matrix.index.nunique(),
+                xlabel='Public Good',
+                ylabel='Citizen',
+                clabel='Amount of value produced by public_good p for citizen i.',
+                cnorm='log',
+                rot=90,
+                xaxis='top',
+                yaxis='right',
+            )
+            .opts(default_tools=['pan', 'hover'])
+        )
+
+        # Customize the plot using HoloViews and Bokeh
+        def apply_custom_styling(plot, element):
+            print('ELEMENTTTTTT')
+            print(element)
+            plot.state.axis.major_label_text_color = (
+                'red'  # Example to change label text color
+            )
+            # Add more customizations here
+
+        # Apply the custom styling
+        heatmap = heatmap.opts(hv.opts.HeatMap(hooks=[apply_custom_styling]))
+
+        return pn.Column(heatmap, contributions_matrix)
 
     @pm.depends('donations.dataset')
     def contributions_network_view(self):
@@ -472,7 +551,7 @@ class DonationsDashboard(pm.Parameterized):
                 ('Contributions Matrix', self.contributions_matrix_view),
                 # ('Donor Donation Counts', self.donor_view),
                 # ('Sankey', self.sankey_view),
-                active=2,
+                active=3,
                 dynamic=True,
             ),
         )
