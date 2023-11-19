@@ -70,7 +70,7 @@ class Outcomes(pm.Parameterized):
         charts = []
         for i, boost in enumerate(self.boost_factory.boosts):
             # Chart 1 is the token distribution chart on the boost.
-            chart1 = boost.view_signal()
+            chart1 = boost.view_signal().opts(tools=[])
 
             # Chart 2 is inner merge of the contributors dataset and addresses that have positive Boost_i from collected boosts.
             collected_boost = collected_boosts[collected_boosts[f'Boost_{i}'] > 0]
