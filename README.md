@@ -5,79 +5,17 @@ utilizing token signal inputs to determine funding outcomes.
 
 
 ## Table of Contents
-1. [Getting Started](#getting-started)
-2. [Background](#background)
+1. [Introduction](#iNTRODUCTION)
+2. [Getting Started](#getting-started)
 3. [Specification](#specification)
 4. [TEGRX](#tegrx)
-6. [Acknowledgements](#acknowledgements)
-7. [Contact Information](#contact-information)
+5. [Acknowledgements](#acknowledgements)
+6. [Contact Information](#contact-information)
 
-## Getting Started
+## Introduction
 
-### Installation
-In Alloha is implemented using in Python using the
-[HoloViz](https://holoviz.org) data science stack. Dependency management is
-handled by [Python Poetry](https://python-poetry.org/). To install poetry follow the
-instructions provided on the website.
+### Background
 
-Requirements
-* Python3.10
-* Python Poetry
-* Git
-
-To run this app locally follow the steps below:
-1. Clone the [repository](https://github.com/CommonsBuild/alloha)
-```
-git clone git@github.com:CommonsBuild/alloha.git
-```
-2. Install the dependencies and activate python environment
-```
-cd alloha
-poetry install
-poetry shell
-```
-3. Run the app
-```
-panel serve app/app.py
-```
-
-The app should now be running. Navigite to http://localhost:5006/app in your browser.
-
-### Usage
-The framework takes in donation datasets, token distributions, and user
-input to compute the final funding allocation for each project.
-
-The operations required to utilize TQF are the following:
-1. Input a donation dataset
-2. Input token distribution datasets
-3. Configure the parameters of your boosts
-
-The above steps can be done either programmatically or in the GUI
-
-### Contributions are welcome. 
-
-The project is built using the [HoloViz](https://holoviz.org) data science stack with primary heavy lifting from:
-* [Panel](https://panel.holoviz.org/)
-* [hvplot](https://hvplot.holoviz.org/user_guide/Plotting.html)
-* [Tabulator](https://panel.holoviz.org/reference/widgets/Tabulator.html)
-
-If you are familiar with the above stack or would like to learn, please consider
-taking a look at contributing to the project. 
-
-
-You can get started contributing by picking up
-[issues](https://github.com/CommonsBuild/alloha/issues) on this repository.
-
-### Testing and Feedback
-It is very valuable for us to receive feedback on our work. Please
-[open an issue](https://github.com/CommonsBuild/alloha/issues) if you have any
-questions or topics of discussion that you would like to bring to our attention.
-Please get in touch with
-
-
-## Background
-
-### Introduction
 The Token Engineering Commons has been running community Quadratic Funding on
 the Grants Stack since the Beta round in April 2023. Since the inception of
 the TEGRX rounds, an experimental feature was introduced called subject matter expertise
@@ -118,6 +56,70 @@ framework to tune QF at the end of this proposal’s period.
 and other interested parties (for QF as a mechanism, its benefits, limitations
 and how to tune it – we’re happy to include a few sessions on learning how to
 use the Grants Stack).
+
+
+## Getting Started
+
+### Installation
+In Alloha is implemented using in Python using the
+[HoloViz](https://holoviz.org) data science stack. Dependency management is
+handled by [Python Poetry](https://python-poetry.org/).
+
+Requirements
+* Python3.10
+* Python Poetry
+* Git
+
+To run this app locally follow the steps below:
+1. Clone the [repository](https://github.com/CommonsBuild/alloha)
+```
+git clone git@github.com:CommonsBuild/alloha.git
+```
+2. Install the dependencies and activate python environment
+```
+cd alloha
+poetry install
+poetry shell
+```
+3. Run the app
+```
+panel serve app/app.py
+```
+
+The app should now be running. Navigite to http://localhost:5006/app in your browser.
+
+### Usage
+The framework takes in donation datasets, token distributions, and user
+input to compute the final funding allocation for each project.
+
+The operations required to utilize TQF are the following:
+1. Input a donation dataset
+2. Input token distribution datasets
+3. Configure the parameters of your boosts
+
+The above steps can be done either programmatically or in the GUI
+
+### Contributions are welcome. 
+
+The project is built using the [HoloViz](https://holoviz.org) data science
+stack with primary heavy lifting from, [Panel](https://panel.holoviz.org/),
+[hvplot](https://hvplot.holoviz.org/user_guide/Plotting.html), and
+[Tabulator](https://panel.holoviz.org/reference/widgets/Tabulator.html). If you
+are familiar with these tools or would like to learn, please consider taking a
+look at contributing to the project. 
+
+
+You can get started contributing by picking up
+[issues](https://github.com/CommonsBuild/alloha/issues) on this repository.
+
+### Testing and Feedback
+It is very valuable for us to receive feedback on our work. Please
+[open an issue](https://github.com/CommonsBuild/alloha/issues) if you have any
+questions or topics of discussion that you would like to bring to our attention.
+Please get in touch with
+
+
+
 
 ## Specification
 
