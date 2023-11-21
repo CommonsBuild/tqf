@@ -6,7 +6,7 @@ utilizing token signal inputs to determine funding outcomes.
 
 ## Table of Contents
 1. [Getting Started](#getting-started)
-2. [Introduction](#introduction)
+2. [Background](#background)
 3. [Specification](#specification)
 4. [TEGRX](#tegrx)
 6. [Acknowledgements](#acknowledgements)
@@ -54,7 +54,7 @@ The operations required to utilize TQF are the following:
 
 The above steps can be done either programmatically or in the GUI
 
-### Technology Stack
+### Contributions are welcome. 
 
 The project is built using the [HoloViz](https://holoviz.org) data science stack with primary heavy lifting from:
 * [Panel](https://panel.holoviz.org/)
@@ -65,8 +65,6 @@ If you are familiar with the above stack or would like to learn, please consider
 taking a look at contributing to the project. 
 
 
-### Contributions are welcome. 
-
 You can get started contributing by picking up
 [issues](https://github.com/CommonsBuild/alloha/issues) on this repository.
 
@@ -76,10 +74,10 @@ It is very valuable for us to receive feedback on our work. Please
 questions or topics of discussion that you would like to bring to our attention.
 Please get in touch with
 
-## Introduction
 
-### Background
+## Background
 
+### Introduction
 The Token Engineering Commons has been running community Quadratic Funding on
 the Grants Stack since the Beta round in April 2023. Since the inception of
 the TEGRX rounds, an experimental feature was introduced called subject matter expertise
