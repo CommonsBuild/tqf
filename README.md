@@ -179,13 +179,15 @@ Notice above that we do not need the sum operator anymore due to the nature of v
 Consider a token distribution dataset as a vector $`\mathbf{T} \in 
 \mathbb{Z}^{n+}`$ such that $`\mathbf{T_i}`$ is the balance of $`c_i`$.
 
+<center>
+
 | Address                           | Balance |
 |-----------------------------------|---------|
 | 0x456...abc                       | 200     |
 | 0x123...def                       | 100     |
 | ...                               | ...     |
 
-
+</center>
 
 The dataset can represent fungible or non-fungible tokens.
 
