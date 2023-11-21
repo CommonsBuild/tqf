@@ -5,13 +5,76 @@ utilizing token signal inputs to determine funding outcomes.
 
 
 ## Table of Contents
-1. [Introduction](#introduction)
-2. [Specification](#specification)
-3. [Usage](#usage)
-4. [Contributing](#contributing)
-5. [Acknowledgements](#acknowledgements)
-6. [Contact Information](#contact-information)
-7. [TEGRX](#tegrx)
+1. [Getting Started](#getting-started)
+2. [Introduction](#introduction)
+3. [Specification](#specification)
+4. [TEGRX](#tegrx)
+6. [Acknowledgements](#acknowledgements)
+7. [Contact Information](#contact-information)
+
+## Getting Started
+
+### Installation
+In Alloha is implemented using in Python using the
+[HoloViz](https://holoviz.org) data science stack. Dependency management is
+handled by [Python Poetry](https://python-poetry.org/). To install poetry follow the
+instructions provided on the website.
+
+Requirements
+* Python3.10
+* Python Poetry
+* Git
+
+To run this app locally follow the steps below:
+1. Clone the [repository](https://github.com/CommonsBuild/alloha)
+```
+git clone git@github.com:CommonsBuild/alloha.git
+```
+2. Install the dependencies and activate python environment
+```
+cd alloha
+poetry install
+poetry shell
+```
+3. Run the app
+```
+panel serve app/app.py
+```
+
+The app should now be running. Navigite to http://localhost:5006/app in your browser.
+
+### Usage
+The framework takes in donation datasets, token distributions, and user
+input to compute the final funding allocation for each project.
+
+The operations required to utilize TQF are the following:
+1. Input a donation dataset
+2. Input token distribution datasets
+3. Configure the parameters of your boosts
+
+The above steps can be done either programmatically or in the GUI
+
+### Technology Stack
+
+The project is built using the [HoloViz](https://holoviz.org) data science stack with primary heavy lifting from:
+* [Panel](https://panel.holoviz.org/)
+* [hvplot](https://hvplot.holoviz.org/user_guide/Plotting.html)
+* [Tabulator](https://panel.holoviz.org/reference/widgets/Tabulator.html)
+
+If you are familiar with the above stack or would like to learn, please consider
+taking a look at contributing to the project. 
+
+
+### Contributions are welcome. 
+
+You can get started contributing by picking up
+[issues](https://github.com/CommonsBuild/alloha/issues) on this repository.
+
+### Testing and Feedback
+It is very valuable for us to receive feedback on our work. Please
+[open an issue](https://github.com/CommonsBuild/alloha/issues) if you have any
+questions or topics of discussion that you would like to bring to our attention.
+Please get in touch with
 
 ## Introduction
 
@@ -49,7 +112,7 @@ token engineering field and the greater public goods ecosystem.
 
 ### Scope of the Project
 
-As part of this proposal, we’re planning to deliver:  
+Proposed Delivery for Q4 2023:  
 * A paper or extensive forum post with our findings, recommendations and a
 framework to tune QF at the end of this proposal’s period.
 * An open-sourced MVP tool for all operators to be able to tune QF.
@@ -146,101 +209,6 @@ the donor coefficients, such as:
 
 By providing this level of customization, Alloha empowers communities to experiment with and optimize their funding mechanisms, leading to more equitable and effective public goods funding.
 
-## Usage
-
-### Installation
-In Alloha is implemented using in Python using the
-[HoloViz](https://holoviz.org) data science stack. Dependency management is
-handled by [Python Poetry](https://python-poetry.org/). To install poetry follow the
-instructions provided on the website.
-
-Requirements
-* Python3.10
-* Python Poetry
-* Git
-
-To run this app locally follow the steps below:
-1. Clone the [repository](https://github.com/CommonsBuild/alloha)
-```
-git clone git@github.com:CommonsBuild/alloha.git
-```
-2. Install the dependencies and activate python environment
-```
-cd alloha
-poetry install
-poetry shell
-```
-3. Run the app
-```
-panel serve app/app.py
-```
-
-The app should now be running. Navigite to http://localhost:5006/app in your browser.
-
-
-### Getting Started
-The framework takes in donation datasets, token distributions, and user
-input to compute the final funding allocation for each project.
-
-The operations required to utilize TQF are the following:
-1. Input a donation dataset
-2. Input token distribution datasets
-3. Configure the parameters of your boosts
-
-The above steps can be done either programmatically or in the GUI
-
-
-
-
-## Contributing
-### Contributions are welcome. 
-
-You can get started contributing by picking up
-[issues](https://github.com/CommonsBuild/alloha/issues) on this repository.
-
-The project is built using the holoviz data science stack with primary heavy lifting from:
-* [Panel](https://panel.holoviz.org/)
-* [hvplot](https://hvplot.holoviz.org/user_guide/Plotting.html)
-* [Holoviews](https://holoviews.org/)
-
-And also extensively makes use of:
-* [Tabulator](https://panel.holoviz.org/reference/widgets/Tabulator.html)
-* [Bokeh](https://bokeh.org/)
-
-If you are familiar with the above stack or would like to learn, please consider
-taking a look at the code and potentially picking up or creating an issue. 
-
-### Testing and Feedback
-It is very valuable for us to receive feedback on our work. Please
-[open an issue](https://github.com/CommonsBuild/alloha/issues) if you have any
-questions or topics of discussion that you would like to bring to our attention.
-Please get in touch with
-
-
-## Acknowledgements
-This research repository is maintained in collaboration of the TEC
-Coordination team, and YGG as per the TE Data Science Fellowship at TEC.
-* https://forum.tecommons.org/t/4-month-te-data-science-fellowship/1287
-* https://forum.tecommons.org/t/tec-coordination-team-operating-budget-sep-dec-2023/1286
-
-This research repository is maintained by [The Token Engineering Commons (TEC)](https://twitter.com/tecmns/)
-to aid in the operation of the Token Engineering Grant Round (TEGRX) series
-which allocates a target annual $100,000USD funding to token engineering
-public goods projects via Quadratic Funding.
-
-This research repository was initialized and initially operated by Rxx from the
-TEC Tech Team.
-
-
-## Contact Information
-Contact us on twitter.
-* [@tecmns](https://twitter.com/tecmns)
-* [@ygg_anderson](https://twitter.com/ygg_anderson)
-* [@entigdd](https://twitter.com/entigdd)
-* [@8ctopuso](https://twitter.com/8ctopuso)
-
-Join the Weekly Open Development Call in TEC Discord Thursdays 12:00-1:00pm PST
-
 
 ## TEGRX
 
@@ -268,3 +236,28 @@ necessary information, statistics and process in the ./main.ipynb file.
   - ever since the TE Round was announced and carried out, the $TEC price has stabilised and grown.
   - generate chart for unique holders
     https://dune.com/queries/2457553/4040451
+
+
+## Acknowledgements
+
+This research repository is maintained by [The Token Engineering Commons
+(TEC)](https://twitter.com/tecmns/) to aid in the operation of the Token
+Engineering Grant Round (TEGRX) series which allocates a target annual
+$100,000USD funding to token engineering public goods projects via Quadratic
+Funding.
+
+Funding is provided by TEC Coordination team, and YGG as per the TEC Data Science Fellowship.
+* https://forum.tecommons.org/t/4-month-te-data-science-fellowship/1287
+* https://forum.tecommons.org/t/tec-coordination-team-operating-budget-sep-dec-2023/1286
+
+This research repository was initialized Rxx from the TEC Tech Team.
+
+
+## Contact Information
+Contact us on twitter.
+* [@tecmns](https://twitter.com/tecmns)
+* [@ygg_anderson](https://twitter.com/ygg_anderson)
+* [@entigdd](https://twitter.com/entigdd)
+* [@8ctopuso](https://twitter.com/8ctopuso)
+
+Join the Weekly Open Development Call in TEC Discord Thursdays 12:00-1:00pm PST
