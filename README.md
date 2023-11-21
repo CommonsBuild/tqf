@@ -1,13 +1,66 @@
-# Alloha
----
+# Alloha: Tunable Quadratic Funding
+TQF is a research initiative by the Token Engineering Commons that enables
+transparent and informed quadratic funding round operation with a focus on
+utilizing token signal inputs to determine funding outcomes. 
 
-This research repository is maintained by [The Token Engineering Commons (TEC)](https://twitter.com/tecmns/)
-to aid in the operation of the Token Engineering Grant Round (TEGRX) series
-which allocates a target annual $100,000USD funding to token engineering
-public goods projects via Quadratic Funding. To learn more, read the following:    
-https://medium.com/token-engineering-commons/expertise-and-quadratic-funding-bd4f0c5c3e23
 
-## Quadratic Funding
+## Table of Contents
+1. [Introduction](#introduction)
+2. [Specification](#specification)
+3. [Usage](#usage)
+4. [Contributing](#contributing)
+5. [Acknowledgements](#acknowledgements)
+6. [Contact Information](#contact-information)
+7. [TEGRX](#tegrx)
+
+## Introduction
+
+### Background
+
+The Token Engineering Commons has been running community Quadratic Funding on
+the Grants Stack since the Beta round in April 2023. Since the inception of
+the TEGRX rounds, an experimental feature was introduced called subject matter expertise
+signal boosting SMESB. in SMESB, results of quadratic funding rounds have an
+increase to donations according to the weight of donors holding NFT Certificates from the TE Academy or
+the $TEC token as signals of expertise in the field. Read more in the blog post:
+
+[Incorporating Expertise into Quadratic Funding.](https://medium.com/token-engineering-commons/expertise-and-quadratic-funding-bd4f0c5c3e23)
+
+
+### Purpose
+
+The purpose of this research repository is to contribute data science analysis
+as a tool to the operators of the TEGR rounds and for other community round
+operators that wish to employ the techniques being highlighted in the tunable 
+quadratic funding library.
+
+Prospective Benefits of Tunable Quadratic Funding Include:
+* Increased Sybil Resistance
+* Subject Matter Expertise Signal Boosting
+* Token Community Signal Processing
+* Pluralistic Framework for Analysis of Funding Public Goods
+* Platform for Quadratic Funding Research Education and Communication
+
+The TQF tool allows for stepping through the process of quadratic funding and
+understanding the deeper implications of applying token signals as boosts to
+donations. Communities can align resource allocation with their values.
+Improved public goods funding tools can attract more capital to support the
+token engineering field and the greater public goods ecosystem.
+
+### Scope of the Project
+
+As part of this proposal, we’re planning to deliver:  
+* A paper or extensive forum post with our findings, recommendations and a
+framework to tune QF at the end of this proposal’s period.
+* An open-sourced MVP tool for all operators to be able to tune QF.
+* Training/open sessions for round operators, the token engineering community
+and other interested parties (for QF as a mechanism, its benefits, limitations
+and how to tune it – we’re happy to include a few sessions on learning how to
+use the Grants Stack).
+
+## Specification
+
+### Quadratic Funding
 
 Quadratic Funding is a capital allocation protocol that determines the
 distribution of matching funds across a set of public goods projects. The 
@@ -28,13 +81,11 @@ $`\mathbf{C} \in \mathbb{R}^{n \times m}`$ to a funding vector $`\mathbf{F} \in
 ```
 
 The contributions matrix is
-radicalized elementwise and then project columns are summed on axis 0. The
-resulting vector is squared elementwise to give the quadratic funding per
+radicalized element wise and then project columns are summed on axis 0. The
+resulting vector is squared element wise to give the quadratic funding per
 project. The funding outcome is then normalized such that it sums to 1 and represents a
 distribution to be made by the matching pool.
 
-
-## Tunable Quadratic Funding
 
 ### Contributor Boost Coefficient
 
@@ -81,13 +132,9 @@ The dataset can represent fungible or non-fungible tokens.
 Given a token distribution, a boost vector can be created using a
 signal transformation.
 
-### Implementation in Alloha
-
-In Alloha, the tunable QF process is implemented using a Python data science
-stack. The framework takes in donation datasets and token distributions to
-compute the final funding allocation for each project. The donor coefficients
-are applied to the donations as part of the QF calculation, ensuring that each
-donor's influence is weighted according to the community-defined boost vector $B$.
+ The donor coefficients are applied to the donations as part of the QF
+ calculation, ensuring that each donor's influence is weighted according to the
+ community-defined boost vector $B$.
 
 The framework is flexible and can accommodate various methods of determining
 the donor coefficients, such as:
@@ -99,9 +146,107 @@ the donor coefficients, such as:
 
 By providing this level of customization, Alloha empowers communities to experiment with and optimize their funding mechanisms, leading to more equitable and effective public goods funding.
 
+## Usage
+
+### Installation
+In Alloha is implemented using in Python using the
+[HoloViz](https://holoviz.org) data science stack. Dependency management is
+handled by [Python Poetry](https://python-poetry.org/). To install poetry follow the
+instructions provided on the website.
+
+Requirements
+* Python3.10
+* Python Poetry
+* Git
+
+To run this app locally follow the steps below:
+1. Clone the [repository](https://github.com/CommonsBuild/alloha)
+```
+git clone git@github.com:CommonsBuild/alloha.git
+```
+2. Install the dependencies and activate python environment
+```
+cd alloha
+poetry install
+poetry shell
+```
+3. Run the app
+```
+panel serve app/app.py
+```
+
+The app should now be running. Navigite to http://localhost:5006/app in your browser.
 
 
-## TEGR1
+### Getting Started
+The framework takes in donation datasets, token distributions, and user
+input to compute the final funding allocation for each project.
+
+The operations required to utilize TQF are the following:
+1. Input a donation dataset
+2. Input token distribution datasets
+3. Configure the parameters of your boosts
+
+The above steps can be done either programmatically or in the GUI
+
+
+
+
+## Contributing
+### Contributions are welcome. 
+
+You can get started contributing by picking up
+[issues](https://github.com/CommonsBuild/alloha/issues) on this repository.
+
+The project is built using the holoviz data science stack with primary heavy lifting from:
+* [Panel](https://panel.holoviz.org/)
+* [hvplot](https://hvplot.holoviz.org/user_guide/Plotting.html)
+* [Holoviews](https://holoviews.org/)
+
+And also extensively makes use of:
+* [Tabulator](https://panel.holoviz.org/reference/widgets/Tabulator.html)
+* [Bokeh](https://bokeh.org/)
+
+If you are familiar with the above stack or would like to learn, please consider
+taking a look at the code and potentially picking up or creating an issue. 
+
+### Testing and Feedback
+It is very valuable for us to receive feedback on our work. Please
+[open an issue](https://github.com/CommonsBuild/alloha/issues) if you have any
+questions or topics of discussion that you would like to bring to our attention.
+Please get in touch with
+
+
+## Acknowledgements
+This research repository is maintained in collaboration of the TEC
+Coordination team, and YGG as per the TE Data Science Fellowship at TEC.
+* https://forum.tecommons.org/t/4-month-te-data-science-fellowship/1287
+* https://forum.tecommons.org/t/tec-coordination-team-operating-budget-sep-dec-2023/1286
+
+This research repository is maintained by [The Token Engineering Commons (TEC)](https://twitter.com/tecmns/)
+to aid in the operation of the Token Engineering Grant Round (TEGRX) series
+which allocates a target annual $100,000USD funding to token engineering
+public goods projects via Quadratic Funding.
+
+This research repository was initialized and initially operated by Rxx from the
+TEC Tech Team.
+
+
+## Contact Information
+Contact us on twitter.
+* [@tecmns](https://twitter.com/tecmns)
+* [@ygg_anderson](https://twitter.com/ygg_anderson)
+* [@entigdd](https://twitter.com/entigdd)
+* [@8ctopuso](https://twitter.com/8ctopuso)
+
+Join the Weekly Open Development Call in TEC Discord Thursdays 12:00-1:00pm PST
+
+
+## TEGRX
+
+### TEGR2
+
+### TEGR1
 
 This repo encompasses the Jupyter notebooks we have used in order to determine
 matching exponents for all individuals. We have used two Dune queries prepared
@@ -123,26 +268,3 @@ necessary information, statistics and process in the ./main.ipynb file.
   - ever since the TE Round was announced and carried out, the $TEC price has stabilised and grown.
   - generate chart for unique holders
     https://dune.com/queries/2457553/4040451
-
-
-## Instructions For Running Alloha
-Dependency management is handled by [Poetry](https://python-poetry.org/). To
-install poetry follow the instructions provided on the website.
-
-To run this app locally follow the steps below:
-1. Clone the [repostory](https://github.com/CommonsBuild/alloha)
-```
-git clone git@github.com:CommonsBuild/alloha.git
-```
-2. Install the dependencies
-```
-cd alloha
-poetry install
-poetry shell
-```
-3. Run the app
-```
-panel serve app/app.py
-```
-
-
