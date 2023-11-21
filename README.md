@@ -182,6 +182,7 @@ Notice above that we do not need the sum operator anymore due to the nature of v
 Consider a token distribution dataset as a vector $`\mathbf{T} \in 
 \mathbb{Z}^{n+}`$ such that $`\mathbf{T_i}`$ is the balance of $`c_i`$.
 
+<div align="center">
 <center>
 
 | Address                           | Balance |
@@ -191,6 +192,7 @@ Consider a token distribution dataset as a vector $`\mathbf{T} \in
 | ...                               | ...     |
 
 </center>
+</div>
 
 The dataset can represent fungible or non-fungible tokens.
 
