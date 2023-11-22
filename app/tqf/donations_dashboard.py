@@ -16,6 +16,7 @@ from bokeh.models import (
     FixedTicker,
     HoverTool,
     LinearColorMapper,
+    LogColorMapper,
     LogTicker,
     PrintfTickFormatter,
     TickFormatter,
@@ -270,7 +271,10 @@ class DonationsDashboard(pm.Parameterized):
 
         # Modify edge width to be the donation size divided by 10
         for u, v, d in G.edges(data=True):
-            d['amountUSD'] = 0.2 + d['amountUSD'] / 40
+            # d['edge_width'] = np.sqrt(d['amountUSD']) / 5
+            # d['weight'] = np.sqrt(d['amountUSD'])
+            d['edge_width'] = d['amountUSD'] / 30
+            d['weight'] = d['amountUSD']
 
         # Assigning custom colors per node type
         voter_color_value = 1
@@ -316,11 +320,13 @@ class DonationsDashboard(pm.Parameterized):
                 G.nodes[node]['color'] = public_good_color_value
 
         # Now, calculate max_size and min_size based on the node attributes
-        public_goods_sizes = [
-            size
-            for node, size in G.nodes(data='size')
-            if G.nodes[node]['type'] == 'public_good'
-        ]
+        public_goods_sizes = np.log(
+            [
+                size
+                for node, size in G.nodes(data='size')
+                if G.nodes[node]['type'] == 'public_good'
+            ]
+        )
         max_size = max(public_goods_sizes)
         min_size = min(public_goods_sizes)
 
@@ -328,7 +334,7 @@ class DonationsDashboard(pm.Parameterized):
         def normalize_size(size):
             if max_size == min_size:
                 return 0.5
-            return (size - min_size) / (max_size - min_size)
+            return (np.log(size) - min_size) / (max_size - min_size)
 
         # Updated color mapping function
         def get_node_color(node):
@@ -360,62 +366,6 @@ class DonationsDashboard(pm.Parameterized):
                 v
             ]  # or node_colors[v] depending on your preference
 
-        # Graph Layout Position
-        pos = nx.spring_layout(G, seed=69)
-
-        # Visualization
-        plot = hvnx.draw(
-            G,
-            pos=pos,
-            node_size='size',
-            node_shape='shape',
-            node_color=[get_node_color(node) for node in G.nodes()],
-            edge_width='amountUSD',
-            node_label='index',
-            node_line_color='outline_color',
-            node_line_width=2,
-            edge_color='color',
-            edge_alpha=0.8,
-            node_alpha=0.95,
-            cmap='viridis',
-            width=800,
-            height=800,
-        ).opts(hv.opts.Graph(title='Public Goods Contributions Network'))
-
-        # Create the main graph plot without a colorbar
-        main_graph_plot = plot.opts(
-            hv.opts.Graph(
-                padding=0.01,
-                colorbar=False,
-                legend_position='right',
-                tools=[hover, 'tap'],
-            ),
-            hv.opts.Nodes(line_color='outline_color', line_width=5, tools=[hover]),
-        )
-
-        # Adjust the code to create a DataFrame for labels
-        label_data = []
-        for node, data in G.nodes(data=True):
-            if data.get('type') == 'public_good':
-                pos = nx.spring_layout(G, seed=69)[
-                    node
-                ]  # Adjust the position calculation as needed
-                label_data.append({'x': pos[0], 'y': pos[1], 'label': data['id']})
-
-        # Convert to DataFrame
-        label_df = pd.DataFrame(label_data)
-
-        # Adjust label positions (e.g., move them to the right)
-        label_df['x'] += 0  # Adjust this value as needed
-
-        # Create labels using the DataFrame
-        labels = hv.Labels(label_df, kdims=['x', 'y'], vdims='label').opts(
-            text_font_size='10pt'
-        )
-
-        # Overlay labels on the network graph
-        main_graph_plot = main_graph_plot * labels
-
         # Create a DataFrame for the Points plot with 'Grant Name' and 'Total Donations'
         public_goods_data = (
             donations_df.groupby('Grant Name')['amountUSD'].sum().reset_index()
@@ -438,10 +388,12 @@ class DonationsDashboard(pm.Parameterized):
 
         # Assuming public_goods_data is your DataFrame
         max_funding = public_goods_data['Total Donations'].max()
-        high_value = max_funding * 1.05  # 110% of the max funding
+        min_funding = public_goods_data['Total Donations'].min()
+        high_value = max_funding * 1.3  # 110% of the max funding
+        low_value = min_funding * 0.90  # 110% of the max funding
 
         # Create a color mapper with specified range
-        color_mapper = LinearColorMapper(palette=RdYlGn, low=0, high=high_value)
+        color_mapper = LogColorMapper(palette=RdYlGn, low=1, high=high_value)
 
         # Create a Points plot for the colorbar and hover information
         public_goods_data = public_goods_data.rename(
@@ -457,20 +409,27 @@ class DonationsDashboard(pm.Parameterized):
             color='y',
             line_color='black',
             line_width=2,
-            cmap=color_mapper,  # Assuming RdYlGn is your colormap variable
+            # cmap=color_mapper,  # Assuming RdYlGn is your colormap variable
             colorbar=True,
-            width=300,
+            # colorbar=False,
+            cmap='RdYlGn',
+            alpha=0,
+            padding=0.5,
+            logy=True,
+            logz=True,
+            width=800,
             height=800,
-            show_frame=False,
-            xaxis=None,
-            yaxis=None,
+            # show_frame=False,
+            # xaxis=None,
+            # yaxis=None,
             toolbar=None,
             show_legend=False,
             title='Public Goods Funding Outcomes',
             ylim=(
-                -100,
+                low_value,
                 high_value,
             ),  # Assuming 'high_value' is your calculated upper limit
+            xlim=(-5, 5),
             tools=[
                 HoverTool(
                     tooltips=[
@@ -479,58 +438,131 @@ class DonationsDashboard(pm.Parameterized):
                     ]
                 )
             ],
-        )
-
-        # Adjust colorbar with the fixed range
-        points_for_colorbar = points_for_colorbar.opts(
-            hv.opts.Points(
-                colorbar=True,
-                cmap=RdYlGn,
-                colorbar_opts={
-                    # 'color_mapper': color_mapper,
-                    'ticker': AdaptiveTicker(desired_num_ticks=10),
-                    'formatter': PrintfTickFormatter(format='%d'),
-                },
-            )
+            colorbar_opts={
+                # 'color_mapper': color_mapper,
+                'ticker': FixedTicker(
+                    ticks=[int(x) for x in range(0, int(max_funding), 200)]
+                ),
+                'formatter': PrintfTickFormatter(format='%d'),
+            },
         )
 
         # Define a fixed offset for scatter point labels
-        scatter_label_offset_x = 0  # Adjust this value as needed
+        scatter_label_offset_x = 3.5  # Adjust this value as needed
         scatter_label_offset_y = 0.0   # Y offset, if needed
 
         # Create a DataFrame for labels with positions adjusted
         label_data = public_goods_data.copy()
+
+        label_data['grant_name'] = label_data['grant_name'].str.pad(
+            width=label_data['grant_name'].str.len().max(),
+            side='right',
+            fillchar=' ',
+        )
+
         label_data['x'] = label_data['x'] + scatter_label_offset_x
         label_data['y'] = label_data['y'] + scatter_label_offset_y
 
         # Create labels for scatter points
         scatter_labels = hv.Labels(
-            label_data, kdims=['x', 'y'], vdims=['grant_name']
+            label_data, kdims=['x', 'y'], vdims=['grant_name'], width=1200
         ).opts(text_font_size='10pt')
 
         # Adjust width of the scatter plot to accommodate labels and colorbar
-        plot_width = 400  # Adjust this value as needed to fit labels
+        plot_width = 1200  # Adjust this value as needed to fit labels
 
         # Update the scatter plot with new width and overlay labels
         points_for_colorbar = (
             points_for_colorbar.opts(width=plot_width) * scatter_labels
         )
 
-        # bars_with_colorbar = public_goods_data.hvplot.bar(
-        #     y='total_donations',
-        #     x='grant_name',
-        #     color='total_donations',
-        #     cmap=RdYlGn,
-        #     width=300,
-        #     height=1000,
-        #     sort='total_donations',
-        #     rot=90,
-        # )
+        public_goods_positions = points_for_colorbar.Points.I.data[
+            ['grant_name', 'x', 'y']
+        ]
 
-        # Combine the plots into a layout
+        pos = {
+            p['grant_name']: (p['x'], p['y'])
+            for p in public_goods_positions.to_dict(orient='records')
+        }
+        fixed = list(pos.keys())
+        # print([i for i in public_goods_positions.iterrows()])
+        # print()
+        # print(points_for_colorbar.Points.I.array())
+        # print()
+        # print(points_for_colorbar.Points.I.dframe())
+        # print()
+
+        # Graph Layout Position
+        k = 10 / len(fixed)
+        print(k)
+        pos = nx.spring_layout(
+            G, k=k, iterations=100, weight='edge_width', seed=69, fixed=fixed, pos=pos
+        )
+        # pos = nx.spring_layout(G, k=k, iterations=100, weight='edge_width', seed=69)
+        # pos = nx.spring_layout(G, k=k, iterations=100, weight='edge_width', seed=69)
+
+        # Reflect on y axis:
+        pos = {n: (-abs(x), y) for n, (x, y) in pos.items()}
+
+        pos = {n: (x + 1, y) if n in fixed else (x, y) for n, (x, y) in pos.items()}
+
+        # Visualization
+        plot = hvnx.draw(
+            G,
+            pos=pos,
+            fixed=fixed,
+            node_size='size',
+            node_shape='shape',
+            node_color=[get_node_color(node) for node in G.nodes()],
+            edge_width='edge_width',
+            # node_label='index',
+            node_line_color='outline_color',
+            node_line_width=2,
+            edge_color='color',
+            edge_alpha=0.8,
+            node_alpha=0.95,
+            cmap='viridis',
+            width=1000,
+            height=1000,
+        ).opts(hv.opts.Graph(title='Public Goods Contributions Network'))
+
+        # Create the main graph plot without a colorbar
+        main_graph_plot = plot.opts(
+            hv.opts.Graph(
+                padding=0.01,
+                colorbar=False,
+                legend_position='right',
+                tools=[hover, 'tap'],
+            ),
+            hv.opts.Nodes(line_color='outline_color', line_width=5, tools=[hover]),
+        )
+
+        # Adjust the code to create a DataFrame for labels
+        # label_data = []
+        # for node, data in G.nodes(data=True):
+        #     if data.get('type') == 'public_good':
+        #         node_pos = pos[node]  # Adjust the position calculation as needed
+        #         label_data.append(
+        #             {'x': node_pos[0], 'y': node_pos[1], 'label': data['id']}
+        #         )
+        #
+        # # Convert to DataFrame
+        # label_df = pd.DataFrame(label_data)
+        #
+        # # Adjust label positions (e.g., move them to the right)
+        # label_df['x'] += 0  # Adjust this value as needed
+        #
+        # # Create labels using the DataFrame
+        # labels = hv.Labels(label_df, kdims=['x', 'y'], vdims='label').opts(
+        #     text_font_size='10pt'
+        # )
+        #
+        # # Overlay labels on the network graph
+        # main_graph_plot = main_graph_plot * labels
+
         layout = (
             main_graph_plot.opts(shared_axes=False)
-            + points_for_colorbar.opts(shared_axes=False)
+            * points_for_colorbar.opts(shared_axes=False)
         ).opts(shared_axes=False)
 
         return layout
@@ -551,7 +583,7 @@ class DonationsDashboard(pm.Parameterized):
                 ('Contributions Matrix', self.contributions_matrix_view),
                 # ('Donor Donation Counts', self.donor_view),
                 # ('Sankey', self.sankey_view),
-                active=3,
+                active=2,
                 dynamic=True,
             ),
         )

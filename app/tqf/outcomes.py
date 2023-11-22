@@ -64,7 +64,7 @@ class Outcomes(pm.Parameterized):
     def view_sme_tokens(self):
         # The boost factory output dataset for total boosts
         collected_boosts = self.boost_factory.collect_boosts()
-        print(collected_boosts.dtypes)
+        # print(collected_boosts.dtypes)
 
         # Adding SME colors to the token distribution
         charts = []
@@ -74,7 +74,7 @@ class Outcomes(pm.Parameterized):
 
             # Chart 2 is inner merge of the contributors dataset and addresses that have positive Boost_i from collected boosts.
             collected_boost = collected_boosts[collected_boosts[f'Boost_{i}'] > 0]
-            print(collected_boost)
+            # print(collected_boost)
             chart2_data = (
                 collected_boost.merge(
                     boost.input.dataset.reset_index(),
@@ -98,7 +98,7 @@ class Outcomes(pm.Parameterized):
             hover = HoverTool(
                 tooltips=[('address', '@address'), ('balance', f'@balance_{i}{{0.00}}')]
             )
-            print(chart2_data[['x', f'balance_{i}', 'color', 'address']])
+            # print(chart2_data[['x', f'balance_{i}', 'color', 'address']])
             # ic(chart2_data.columns)
             chart2 = chart2_data.rename({'index': 'x'}, axis=1).hvplot.scatter(
                 y=f'balance_{i}',
