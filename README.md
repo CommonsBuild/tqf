@@ -1,27 +1,31 @@
 # Alloha: Tunable Quadratic Funding
 TQF is a research initiative by the Token Engineering Commons that enables
 transparent and informed quadratic funding round operation with a focus on
-utilizing token signal inputs to determine funding outcomes. 
+utilizing token signal inputs to add tunable weights to donations based on 
+donor token holdings.
 
 
 ## Table of Contents
-1. [Introduction](#iNTRODUCTION)
-2. [Getting Started](#getting-started)
-3. [Specification](#specification)
-4. [TEGRX](#tegrx)
-5. [Acknowledgements](#acknowledgements)
-6. [Contact Information](#contact-information)
-
-## Introduction
+1. [Background](#background)
+2. [Purpose](#purpose)
+3. [Scope of the Project](#scope-of-the-project)
+4. [Getting Started](#getting-started)
+5. [Usage](#usage)
+6. [Contributing](#contributing)
+7. [Testing and Feedback](#testing-and-feedback)
+8. [Specification](#specification)
+9. [TEGRX](#tegrx)
+10. [Acknowledgements](#acknowledgements)
+11. [Contact Information](#contact-information)
 
 ### Background
 
 The Token Engineering Commons has been running community Quadratic Funding on
-the Grants Stack since the Beta round in April 2023. Since the inception of
+the Grants Stack since the Beta round of April 2023. Since the inception of
 the TEGRX rounds, an experimental feature was introduced called subject matter expertise
-signal boosting SMESB. in SMESB, results of quadratic funding rounds have an
-increase to donations according to the weight of donors holding NFT Certificates from the TE Academy or
-the $TEC token as signals of expertise in the field. Read more in the blog post:
+signal boosting SMESB. In SMESB donations are increased according to the weight of donors.
+Donor weight is computed as a result of TE academy credentials and $TEC token holdings which
+are meant to indicate expertise in the field of Token Engineering. Read more in this blog post:
 
 [Incorporating Expertise into Quadratic Funding.](https://medium.com/token-engineering-commons/expertise-and-quadratic-funding-bd4f0c5c3e23)
 
@@ -29,7 +33,7 @@ the $TEC token as signals of expertise in the field. Read more in the blog post:
 ### Purpose
 
 The purpose of this research repository is to contribute data science analysis
-as a tool to the operators of the TEGR rounds and for other community round
+as a tool to the operators of the TEGRX rounds and for other community round
 operators that wish to employ the techniques being highlighted in the tunable 
 quadratic funding library.
 
@@ -37,14 +41,14 @@ Prospective Benefits of Tunable Quadratic Funding Include:
 * Increased Sybil Resistance
 * Subject Matter Expertise Signal Boosting
 * Token Community Signal Processing
-* Pluralistic Framework for Analysis of Funding Public Goods
+* Pluralistic Framework for Analysing Funding Public Goods
 * Platform for Quadratic Funding Research Education and Communication
 
 The TQF tool allows for stepping through the process of quadratic funding and
 understanding the deeper implications of applying token signals as boosts to
 donations. Communities can align resource allocation with their values.
 Improved public goods funding tools can attract more capital to support the
-token engineering field and the greater public goods ecosystem.
+token engineering field and the greater public goods funding ecosystem.
 
 ### Scope of the Project
 
@@ -58,14 +62,13 @@ and how to tune it – we’re happy to include a few sessions on learning how t
 use the Grants Stack).
 
 
-## Getting Started
+### Getting Started
 
-### Installation
-In Alloha is implemented using in Python using the
+Alloha is implemented in Python using the
 [HoloViz](https://holoviz.org) data science stack. Dependency management is
 handled by [Python Poetry](https://python-poetry.org/).
 
-Requirements
+Installation Requirements
 * Python3.10
 * Python Poetry
 * Git
@@ -99,7 +102,7 @@ The operations required to utilize TQF are the following:
 
 The above steps can be done either programmatically or in the GUI
 
-### Contributions are welcome. 
+### Contributing 
 
 The project is built using the [HoloViz](https://holoviz.org) data science
 stack with primary heavy lifting from, [Panel](https://panel.holoviz.org/),
@@ -179,6 +182,7 @@ Notice above that we do not need the sum operator anymore due to the nature of v
 Consider a token distribution dataset as a vector $`\mathbf{T} \in 
 \mathbb{Z}^{n+}`$ such that $`\mathbf{T_i}`$ is the balance of $`c_i`$.
 
+<div align="center">
 <center>
 
 | Address                           | Balance |
@@ -188,6 +192,7 @@ Consider a token distribution dataset as a vector $`\mathbf{T} \in
 | ...                               | ...     |
 
 </center>
+</div>
 
 The dataset can represent fungible or non-fungible tokens.
 
