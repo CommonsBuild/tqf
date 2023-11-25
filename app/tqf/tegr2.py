@@ -45,7 +45,7 @@ tegr2_boost_factory = BoostFactory(boost_template=tegr2_tec_boost)
 tegr2_boost_factory.param['boost_template'].objects = [tegr2_tec_boost, tegr2_tea_boost]
 
 tegr2_qf = TunableQuadraticFunding(
-    donations=tegr2_donations, boost_factory=tegr2_boost_factory
+    donations=tegr2_donations_dashboard, boost_factory=tegr2_boost_factory
 )
 
 

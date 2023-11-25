@@ -78,8 +78,10 @@ class DonationsDashboard(pm.Parameterized):
         return sankey
 
     @pm.depends('donations.dataset')
-    def projects_view(self):
-        donations_df = self.donations.dataset
+    def projects_table(self, donations_df, donation_column='amountUSD'):
+
+        total_donations = donations_df[donation_column].sum()
+        total_donors = donations_df['voter'].nunique()
 
         # Calculate Data per Project
         projects = (
@@ -87,29 +89,43 @@ class DonationsDashboard(pm.Parameterized):
             .apply(
                 lambda group: pd.Series(
                     {
-                        'donor_count': group['voter'].nunique(),
-                        'mean_donation': group['amountUSD'].mean(),
-                        'median_donation': group['amountUSD'].median(),
-                        'total_donation': group['amountUSD'].sum(),
-                        'max_donation': group['amountUSD'].max(),
-                        'max_doner': group.loc[group['amountUSD'].idxmax(), 'voter'],
-                        'donations': sorted(group['amountUSD'].tolist(), reverse=True),
+                        'Number of Donors': group['voter'].nunique(),
+                        'Percentage of Donors': group['voter'].nunique() / total_donors,
+                        'Total Donations': group[donation_column].sum(),
+                        'Percent of Donations': group[donation_column].sum()
+                        / total_donations,
+                        'Mean Donation': group[donation_column].mean(),
+                        'Median Donation': group[donation_column].median(),
+                        'Max Donations': group[donation_column].max(),
+                        'Max Donor': group.loc[
+                            group[donation_column].idxmax(), 'voter'
+                        ],
+                        'Donations': sorted(
+                            group[donation_column].tolist(), reverse=True
+                        ),
                     }
                 )
             )
             .reset_index()
         )
+
+        return projects
+
+    @pm.depends('donations.dataset')
+    def projects_view(self):
+        projects = self.projects_table(donations_df=self.donations.dataset)
+
         # Format the donations list
-        projects['donations'] = projects['donations'].apply(
+        projects['Donations'] = projects['Donations'].apply(
             lambda donations: ['${:.2f}'.format(n) for n in donations]
         )
 
         # Use tabulator to display the data
         projects_view = pn.widgets.Tabulator(
             projects,
-            formatters={'donations': {'type': 'textarea', 'textAlign': 'left'}},
+            formatters={'Donations': {'type': 'textarea', 'textAlign': 'left'}},
         )
-        projects_view.style.applymap(color_based_on_eth_address, subset='max_doner')
+        projects_view.style.applymap(color_based_on_eth_address, subset='Max Donor')
         return projects_view
 
     def contributor_dataset(self):

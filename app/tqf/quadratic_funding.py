@@ -8,61 +8,76 @@ import param as pm
 
 class TunableQuadraticFunding(pm.Parameterized):
 
-    donations = pm.Selector(doc='Donations Dataset')
+    donations_dashboard = pm.Selector(doc='Donations Dataset')
     boost_factory = pm.Selector()
     boosts = pm.DataFrame(precedence=-1)
     boost_coefficient = pm.Number(1, bounds=(0, 10), step=0.1)
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
-    matching_percentage_cap = pm.Magnitude(0.2, step=0.01)
+    matching_percentage_cap = pm.Number(0.2, step=0.01, bounds=(0.01, 1))
     qf = pm.DataFrame(precedence=-1)
-    boosted_donations = pm.DataFrame(precedence=-1)
+    boosted_donations = pm.DataFrame(precedence=1)
     boosted_qf = pm.DataFrame(precedence=-1)
     results = pm.DataFrame(precedence=-1)
     mechanism = pm.Selector(
         objects=[
             'Direct Contributions',
-            '1p1v',
+            # '1p1v',
             'Quadratic Funding',
             'Pairwise Penalty',
             'Cluster Mapping',
         ]
     )
 
+    @pm.depends('donations_dashboard', watch=True, on_init=True)
+    def update_donations(self):
+        self.donations = self.donations_dashboard.donations
+
     def _qf(self, donations_dataset, donation_column='amountUSD'):
-        """Apply the quadratic algorithm."""
-        qf = (
-            donations_dataset.groupby(['Grant Name', 'grantAddress'])[donation_column]
-            .apply(lambda x: np.square(np.sum(np.sqrt(x))))
-            .sort_values(ascending=False)
-        ).to_frame(name='quadratic_funding')
+        # Group by 'Grant Name' and 'grantAddress', then apply calculations
+        qf = donations_dataset.groupby(['Grant Name', 'grantAddress']).apply(
+            lambda group: pd.Series(
+                {
+                    'Mechanism Funding': np.square(
+                        np.sum(np.sqrt(group[donation_column]))
+                    ),
+                    'Direct Donations': group['amountUSD'].sum(),
+                }
+            )
+        )
 
-        # Calculate the relative distribution
-        qf['distribution'] = qf / qf.sum()
+        # Sort values if needed
+        qf = qf.sort_values(by='Mechanism Funding', ascending=False)
 
-        # Apply the Matching Percentage Cap
-        qf['capped_distribution'] = qf['distribution'].where(
-            qf['distribution'] < self.matching_percentage_cap,
-            self.matching_percentage_cap,
+        # Calculate 'Matching Funding'
+        qf['Matching Funding'] = qf['Mechanism Funding'] - qf['Direct Donations']
+
+        # Calculate the stochastic vector funding distribution
+        qf['Matching Distribution'] = (
+            qf['Matching Funding'] / qf['Matching Funding'].sum()
         )
 
         # Applying a Cap to the Distribution
+        qf['Matching Distribution'] = qf['Matching Distribution'].where(
+            qf['Matching Distribution'] < self.matching_percentage_cap,
+            self.matching_percentage_cap,
+        )
 
         # Identify Mask of Distributions Less than the Cap
-        mask = qf['capped_distribution'] < self.matching_percentage_cap
+        mask = qf['Matching Distribution'] < self.matching_percentage_cap
 
         # Scale low distributions by 1 - sum of high distributions
-        qf.loc[mask, 'capped_distribution'] *= (
-            1 - qf['capped_distribution'][~mask].sum()
-        ) / qf['capped_distribution'][mask].sum()
+        qf.loc[mask, 'Matching Distribution'] *= (
+            1 - qf['Matching Distribution'][~mask].sum()
+        ) / qf['Matching Distribution'][mask].sum()
 
         # Cap the high distributions
-        qf['capped_distribution'] = qf['capped_distribution'].where(
-            qf['capped_distribution'] < self.matching_percentage_cap,
+        qf['Matching Distribution'] = qf['Matching Distribution'].where(
+            qf['Matching Distribution'] < self.matching_percentage_cap,
             self.matching_percentage_cap,
         )
 
         # Apply the Matching Pool
-        qf['matching'] = qf['capped_distribution'] * self.matching_pool
+        qf['Matching Funds'] = qf['Matching Distribution'] * self.matching_pool
 
         return qf
 
@@ -99,18 +114,28 @@ class TunableQuadraticFunding(pm.Parameterized):
         'boosts', 'boost_coefficient', 'donations.dataset', watch=True, on_init=True
     )
     def update_boosted_donations(self):
-        boosted_donations = self.boosts.merge(
-            self.donations.dataset,
-            left_on='address',
-            right_on='voter',
-            how='right',
-        ).fillna(0)
-        boosted_donations['coefficient'] = (
+        # Merge Boosts into Donations
+        boosted_donations = self.donations.dataset.merge(
+            self.boosts,
+            how='outer',
+            left_on='voter',
+            right_on='address',
+        )
+
+        # Non-boosted donations are initially set to 0
+        boosted_donations = boosted_donations.fillna(0)
+
+        # Set the Boost Coefficient
+        boosted_donations['Boost Coefficient'] = (
             1 + self.boost_coefficient * boosted_donations['Total_Boost']
         )
+
+        # Set the Boosted Amount as a Boost Coefficient * Donation Amount
         boosted_donations['Boosted Amount'] = (
-            boosted_donations['coefficient'] * boosted_donations['amountUSD']
+            boosted_donations['Boost Coefficient'] * boosted_donations['amountUSD']
         )
+
+        # Set the Boosted Donations on the TQF Class Instance
         self.boosted_donations = boosted_donations
 
     @pm.depends(
@@ -149,19 +174,104 @@ class TunableQuadraticFunding(pm.Parameterized):
 
         return funding
 
+    @pm.depends('boost_coefficient', watch=True, on_init=True)
+    def project_stats(self, donation_column='Boosted Amount'):
+        boosted_donations = self.boosted_donations
+        projects = self.donations_dashboard.projects_table(
+            donations_df=boosted_donations, donation_column=donation_column
+        )
+        sme_donations = boosted_donations[boosted_donations['address'] != 0]
+        total_smes = sme_donations['address'].nunique()
+        total_sme_donations = sme_donations[donation_column].sum()
+        sme_stats = sme_donations.groupby('Grant Name').apply(
+            lambda group: pd.Series(
+                {
+                    'Number of SMEs': group['address'].nunique(),
+                    'Percentage of SMEs': group['address'].nunique() / total_smes,
+                    'Total SME Donations': group[donation_column].sum(),
+                    'Percent of Total SME Donations': group[donation_column].sum()
+                    / total_smes,
+                    'Mean SME Donation': group[donation_column].mean(),
+                    'Median SME Donation': group[donation_column].median(),
+                    'Max SME Donations': group[donation_column].max(),
+                    'Max SME Donor': group.loc[
+                        group[donation_column].idxmax(), 'voter'
+                    ],
+                    'SMEs': [
+                        a[:8] for a in sorted(group['address'].tolist(), reverse=True)
+                    ],
+                    'SME Donations': sorted(
+                        group[donation_column].tolist(), reverse=True
+                    ),
+                }
+            )
+        )
+
+        projects = projects.merge(
+            sme_stats, how='outer', left_on='Grant Name', right_index=True
+        )
+        return projects
+
+    @pm.depends('donations.dataset')
+    def projects_table(self, donations_df, donation_column='amountUSD'):
+
+        total_donations = donations_df[donation_column].sum()
+        total_donors = donations_df['voter'].nunique()
+
+        # Calculate Data per Project
+        projects = (
+            donations_df.groupby('Grant Name')
+            .apply(
+                lambda group: pd.Series(
+                    {
+                        'Number of Donors': group['voter'].nunique(),
+                        'Percentage of Donors': group['voter'].nunique() / total_donors,
+                        'Total Donations': group[donation_column].sum(),
+                        'Percent of Total Donations': group[donation_column].sum()
+                        / total_donations,
+                        'Mean Donation': group[donation_column].mean(),
+                        'Median Donation': group[donation_column].median(),
+                        'Max Donations': group[donation_column].max(),
+                        'Max Donor': group.loc[
+                            group[donation_column].idxmax(), 'voter'
+                        ],
+                        'Donations': sorted(
+                            group[donation_column].tolist(), reverse=True
+                        ),
+                    }
+                )
+            )
+            .reset_index()
+        )
+
+        return projects
+
     @pm.depends('qf', 'boosted_qf', watch=True, on_init=True)
     def update_results(self):
-        # print('HEEERE')
-        results = pd.merge(
-            self.qf,
-            self.boosted_qf,
-            on=['Grant Name', 'grantAddress'],
-            suffixes=('', '_boosted'),
+        results = (
+            self.project_stats()
+            .drop(
+                ['Max Donor', 'Donations', 'SMEs', 'SME Donations', 'Max SME Donor'],
+                axis=1,
+            )
+            .merge(
+                pd.merge(
+                    self.qf,
+                    self.boosted_qf,
+                    on=['Grant Name', 'grantAddress'],
+                    suffixes=('', ' Boosted'),
+                ),
+                on=['Grant Name'],
+            )
         )
-        # print(results)
         results['Boost Percentage Change'] = 100 * (
-            (results['matching_boosted'] - results['matching']) / results['matching']
-        )
+            (results['Matching Funds Boosted'] - results['Matching Funds'])
+            / results['Matching Funds']
+        ).round(2)
+
+        self.results = results
+        return
+        # print(results)
         results['ClusterMatch'] = self.donation_profile_clustermatch(
             self.donations.dataset
         )
