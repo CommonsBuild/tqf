@@ -33,26 +33,34 @@ class Outcomes(pm.Parameterized):
     def view_boosts(self):
         return self.tqf.boosts
 
-    def view_sme_tables(self):
+    @pm.depends('boost_factory.param', watch=True, on_init=True)
+    def boost_tables(self):
         collected_boosts = self.boost_factory.collect_boosts()
         contributors = self.donations_dashboard.contributor_dataset()
 
-        charts = []
+        boosts = []
         for i, boost in enumerate(self.boost_factory.boosts):
-            chart_data = (
+            boost_data = (
                 collected_boosts[collected_boosts[f'balance_{i}'] > 0]
                 .merge(contributors, how='inner', left_on='address', right_on='voter')
                 .drop('address', axis=1)
                 .set_index('voter')
             ).reset_index()
             # Format the donations list
-            chart_data['donations'] = chart_data['donations'].apply(
+            boost_data['donations'] = boost_data['donations'].apply(
                 lambda donations: ['${:.2f}'.format(n) for n in donations]
             )
 
+            boosts.append(boost_data)
+        return boosts
+
+    def view_boost_tables(self):
+        boosts = self.boost_tables()
+        charts = []
+        for boost in boosts:
             # Use tabulator to display the data
             chart = pn.widgets.Tabulator(
-                chart_data,
+                boost,
                 formatters={'donations': {'type': 'textarea', 'textAlign': 'left'}},
             )
             chart.style.applymap(color_based_on_eth_address, subset='voter')
@@ -121,13 +129,17 @@ class Outcomes(pm.Parameterized):
         return pn.Row(*charts)
 
     def view(self):
+        self.donations_dashboard.boost_tables = self.boost_tables
+        self.donations_dashboard.sme_list = set.union(
+            *[set(boost['voter']) for boost in self.boost_tables()]
+        )
         donations_view = self.donations_dashboard.view()
         donations_view[1].append(
             (
                 'Subject Matter Expertise',
                 pn.Column(
                     self.view_sme_tokens(),
-                    self.view_sme_tables(),
+                    self.view_boost_tables(),
                 ),
             )
         )

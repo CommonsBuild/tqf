@@ -266,7 +266,7 @@ class DonationsDashboard(pm.Parameterized):
             'voter',
             'Grant Name',
             ['amountUSD'],
-            create_using=nx.Graph(),
+            create_using=nx.DiGraph(),
         )
 
         # Modify edge width to be the donation size divided by 10
@@ -277,13 +277,13 @@ class DonationsDashboard(pm.Parameterized):
             d['weight'] = d['amountUSD']
 
         # Assigning custom colors per node type
-        voter_color_value = 1
-        public_good_color_value = 2
-        custom_cmap = {
-            voter_color_value: 'purple',
-            public_good_color_value: 'orange',
-            'default': 'lightgray',
-        }
+        # voter_color_value = 1
+        # public_good_color_value = 2
+        # custom_cmap = {
+        #     voter_color_value: 'purple',
+        #     public_good_color_value: 'orange',
+        #     'default': 'lightgray',
+        # }
 
         # Calculate the total donation for each public good
         total_donations_per_public_good = donations_df.groupby('Grant Name')[
@@ -298,17 +298,23 @@ class DonationsDashboard(pm.Parameterized):
             hex_color = f'#{address[2:8]}'
             return hex_color
 
+        def get_donor_edge_color(address):
+            if not hasattr(self, 'boost_tables'):
+                return get_hex_color(address)
+            else:
+                return 'black'
+
         # Set node attributes
         for node in G.nodes():
             if node in donations_df['voter'].unique():
                 G.nodes[node]['size'] = donations_df[donations_df['voter'] == node][
                     'amountUSD'
                 ].sum()
-                G.nodes[node]['color'] = voter_color_value
+                # G.nodes[node]['color'] = voter_color_value
                 G.nodes[node]['id'] = node
                 G.nodes[node]['shape'] = 'circle'
                 G.nodes[node]['type'] = 'voter'
-                G.nodes[node]['outline_color'] = get_hex_color(node)
+                G.nodes[node]['outline_color'] = get_donor_edge_color(node)
             else:
                 G.nodes[node]['size'] = donations_df[
                     donations_df['Grant Name'] == node
@@ -317,7 +323,7 @@ class DonationsDashboard(pm.Parameterized):
                 G.nodes[node]['shape'] = 'square'
                 G.nodes[node]['type'] = 'public_good'
                 G.nodes[node]['outline_color'] = 'black'  # Outline color for voters
-                G.nodes[node]['color'] = public_good_color_value
+                # G.nodes[node]['color'] = public_good_color_value
 
         # Now, calculate max_size and min_size based on the node attributes
         # public_goods_sizes = np.log(
@@ -353,7 +359,10 @@ class DonationsDashboard(pm.Parameterized):
         # Updated color mapping function
         def get_node_color(node):
             if G.nodes[node]['type'] == 'voter':
-                return get_hex_color(node)
+                if hasattr(self, 'sme_list') and node in self.sme_list:
+                    return get_hex_color(node)
+                else:
+                    return 'white'
             elif G.nodes[node]['type'] == 'public_good':
                 size = G.nodes[node]['size']
                 normalized = normalize_size(size)
@@ -363,6 +372,22 @@ class DonationsDashboard(pm.Parameterized):
                 return bokeh_RdYlGn[11][::-1][int(normalized * (palette_length - 1))]
             else:
                 return custom_cmap.get(G.nodes[node].get('color', 'default'), 'default')
+
+        # Updated color mapping function
+        def get_node_alpha(node):
+            if G.nodes[node]['type'] == 'voter':
+                if hasattr(self, 'sme_list') and node in self.sme_list:
+                    return 0.95
+                else:
+                    return 0.95
+            elif G.nodes[node]['type'] == 'public_good':
+                return 0.95
+
+        def get_edge_alpha(edge):
+            if hasattr(self, 'sme_list') and edge[0] in self.sme_list:
+                return 0.95
+            else:
+                return 0
 
         tooltips = [
             ('Id', '@id'),
@@ -377,7 +402,7 @@ class DonationsDashboard(pm.Parameterized):
         # Assign edge colors based on the color of the source (or voter) node
         for u, v, d in G.edges(data=True):
             d['color'] = node_colors[
-                v
+                u
             ]  # or node_colors[v] depending on your preference
 
         # Create a DataFrame for the Points plot with 'Grant Name' and 'Total Donations'
@@ -551,6 +576,8 @@ class DonationsDashboard(pm.Parameterized):
             G,
             pos=pos,
             fixed=fixed,
+            arrows=False,
+            edge_curvature=0.5,
             node_size='size',
             node_shape='shape',
             node_color=[get_node_color(node) for node in G.nodes()],
@@ -559,9 +586,9 @@ class DonationsDashboard(pm.Parameterized):
             node_line_color='outline_color',
             node_line_width=2,
             edge_color='color',
-            edge_alpha=0.8,
-            node_alpha=0.95,
-            cmap='viridis',
+            edge_alpha=[get_edge_alpha(edge) for edge in G.edges(data=True)],
+            node_alpha=[get_node_alpha(node) for node in G.nodes()],
+            cmap='RdYlGn',
             width=1200,
             height=1000,
         ).opts(hv.opts.Graph(title='Public Goods Contributions and Funding Outcomes'))
@@ -607,6 +634,7 @@ class DonationsDashboard(pm.Parameterized):
             * points_for_colorbar.opts(shared_axes=False)
         ).opts(shared_axes=False)
 
+        # return nx.to_pandas_edgelist(G)
         return layout
 
     def donation_groups_view(self):
