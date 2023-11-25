@@ -138,6 +138,7 @@ class Outcomes(pm.Parameterized):
                 self.tqf.param['boost_coefficient'],
                 self.tqf.param['matching_pool'],
                 self.tqf.param['matching_percentage_cap'],
+                self.tqf.param['mechanism'],
             ),
             pn.Column(donations_view),
         )

@@ -8,7 +8,7 @@ import param as pm
 
 class TunableQuadraticFunding(pm.Parameterized):
 
-    donations = pm.Selector(doc="Donations Dataset")
+    donations = pm.Selector(doc='Donations Dataset')
     boost_factory = pm.Selector()
     boosts = pm.DataFrame(precedence=-1)
     boost_coefficient = pm.Number(1, bounds=(0, 10), step=0.1)
@@ -18,6 +18,15 @@ class TunableQuadraticFunding(pm.Parameterized):
     boosted_donations = pm.DataFrame(precedence=-1)
     boosted_qf = pm.DataFrame(precedence=-1)
     results = pm.DataFrame(precedence=-1)
+    mechanism = pm.Selector(
+        objects=[
+            'Direct Contributions',
+            '1p1v',
+            'Quadratic Funding',
+            'Pairwise Penalty',
+            'Cluster Mapping',
+        ]
+    )
 
     def _qf(self, donations_dataset, donation_column='amountUSD'):
         """Apply the quadratic algorithm."""
@@ -209,4 +218,6 @@ class TunableQuadraticFunding(pm.Parameterized):
             filename='boosted_donations.csv',
             button_type='primary',
         )
-        return pn.Column(self, self.view_results, results_download, boosted_donations_download)
+        return pn.Column(
+            self, self.view_results, results_download, boosted_donations_download
+        )

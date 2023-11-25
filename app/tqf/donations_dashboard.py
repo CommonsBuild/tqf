@@ -320,13 +320,27 @@ class DonationsDashboard(pm.Parameterized):
                 G.nodes[node]['color'] = public_good_color_value
 
         # Now, calculate max_size and min_size based on the node attributes
-        public_goods_sizes = np.log(
-            [
-                size
-                for node, size in G.nodes(data='size')
-                if G.nodes[node]['type'] == 'public_good'
-            ]
-        )
+        # public_goods_sizes = np.log(
+        #     [
+        #         size
+        #         for node, size in G.nodes(data='size')
+        #         if G.nodes[node]['type'] == 'public_good'
+        #     ]
+        # )
+        # max_size = max(public_goods_sizes)
+        # min_size = min(public_goods_sizes)
+        #
+        # # Normalize function
+        # def normalize_size(size):
+        #     if max_size == min_size:
+        #         return 0.5
+        #     return (np.log(size) - min_size) / (max_size - min_size)
+
+        public_goods_sizes = [
+            size
+            for node, size in G.nodes(data='size')
+            if G.nodes[node]['type'] == 'public_good'
+        ]
         max_size = max(public_goods_sizes)
         min_size = min(public_goods_sizes)
 
@@ -334,7 +348,7 @@ class DonationsDashboard(pm.Parameterized):
         def normalize_size(size):
             if max_size == min_size:
                 return 0.5
-            return (np.log(size) - min_size) / (max_size - min_size)
+            return (size - min_size) / (max_size - min_size)
 
         # Updated color mapping function
         def get_node_color(node):
@@ -389,11 +403,14 @@ class DonationsDashboard(pm.Parameterized):
         # Assuming public_goods_data is your DataFrame
         max_funding = public_goods_data['Total Donations'].max()
         min_funding = public_goods_data['Total Donations'].min()
-        high_value = max_funding * 1.3  # 110% of the max funding
-        low_value = min_funding * 0.90  # 110% of the max funding
+        # high_value = max_funding * 1.3  # 110% of the max funding
+        # low_value = min_funding * 0.90  # 110% of the max funding
+        high_value = max_funding * 1.05  # 110% of the max funding
+        low_value = 0  # 110% of the max funding
 
         # Create a color mapper with specified range
-        color_mapper = LogColorMapper(palette=RdYlGn, low=1, high=high_value)
+        # color_mapper = LogColorMapper(palette=RdYlGn, low=1, high=high_value)
+        color_mapper = LinearColorMapper(palette=RdYlGn, low=0, high=high_value)
 
         # Create a Points plot for the colorbar and hover information
         public_goods_data = public_goods_data.rename(
@@ -414,15 +431,15 @@ class DonationsDashboard(pm.Parameterized):
             # colorbar=False,
             cmap='RdYlGn',
             alpha=0,
-            padding=0.5,
-            logy=True,
-            logz=True,
+            # padding=0.5,
+            # logy=True,
+            # logz=True,
             width=800,
             height=800,
             # show_frame=False,
             # xaxis=None,
             # yaxis=None,
-            toolbar=None,
+            # toolbar=None,
             show_legend=False,
             title='Public Goods Funding Outcomes',
             ylim=(
@@ -440,45 +457,68 @@ class DonationsDashboard(pm.Parameterized):
             ],
             colorbar_opts={
                 # 'color_mapper': color_mapper,
-                'ticker': FixedTicker(
-                    ticks=[int(x) for x in range(0, int(max_funding), 200)]
-                ),
+                # 'ticker': FixedTicker(
+                #     ticks=[int(x) for x in range(0, int(max_funding), 200)]
+                # ),
                 'formatter': PrintfTickFormatter(format='%d'),
             },
         )
 
+        def customize_colorbar(plot, element):
+            color_bar = plot.handles.get('color_bar', None)
+            if color_bar:
+                color_bar.major_label_text_font_size = (
+                    '12pt'  # Adjust the font size as needed
+                )
+
+        points_for_colorbar = points_for_colorbar.opts(hooks=[customize_colorbar])
+
         # Define a fixed offset for scatter point labels
-        scatter_label_offset_x = 3.5  # Adjust this value as needed
-        scatter_label_offset_y = 0.0   # Y offset, if needed
+        # scatter_label_offset_x = 2.5  # Adjust this value as needed
+        # scatter_label_offset_y = 0.0   # Y offset, if needed
 
         # Create a DataFrame for labels with positions adjusted
-        label_data = public_goods_data.copy()
-
-        label_data['grant_name'] = label_data['grant_name'].str.pad(
-            width=label_data['grant_name'].str.len().max(),
-            side='right',
-            fillchar=' ',
-        )
-
-        label_data['x'] = label_data['x'] + scatter_label_offset_x
-        label_data['y'] = label_data['y'] + scatter_label_offset_y
-
-        # Create labels for scatter points
-        scatter_labels = hv.Labels(
-            label_data, kdims=['x', 'y'], vdims=['grant_name'], width=1200
-        ).opts(text_font_size='10pt')
+        # label_data = public_goods_data.copy()
+        #
+        # label_data['grant_name_padded'] = label_data['grant_name'].str.pad(
+        #     width=label_data['grant_name'].str.len().max(),
+        #     side='right',
+        #     fillchar=' ',
+        # )
+        #
+        # label_data['x'] = (
+        #     label_data['x']
+        #     + scatter_label_offset_x
+        #     + 0.02 * label_data['grant_name'].str.len()
+        # )
+        # label_data['y'] = label_data['y'] + scatter_label_offset_y
+        #
+        # # Create labels for scatter points
+        # scatter_labels = hv.Labels(
+        #     label_data, kdims=['x', 'y'], vdims=['grant_name']
+        # ).opts(text_font_size='10pt', text_align='right', text_baseline='middle')
 
         # Adjust width of the scatter plot to accommodate labels and colorbar
         plot_width = 1200  # Adjust this value as needed to fit labels
 
         # Update the scatter plot with new width and overlay labels
         points_for_colorbar = (
-            points_for_colorbar.opts(width=plot_width) * scatter_labels
+            points_for_colorbar.opts(
+                width=plot_width,
+                colorbar_position='left',
+                fontsize={
+                    'title': 16,
+                    'ticks': 10,
+                },
+                # fontscale=2,
+            )
+            # * scatter_labels
         )
 
-        public_goods_positions = points_for_colorbar.Points.I.data[
-            ['grant_name', 'x', 'y']
-        ]
+        # public_goods_positions = points_for_colorbar.Points.I.data[
+        #     ['grant_name', 'x', 'y']
+        # ]
+        public_goods_positions = points_for_colorbar.data[['grant_name', 'x', 'y']]
 
         pos = {
             p['grant_name']: (p['x'], p['y'])
@@ -522,9 +562,9 @@ class DonationsDashboard(pm.Parameterized):
             edge_alpha=0.8,
             node_alpha=0.95,
             cmap='viridis',
-            width=1000,
+            width=1200,
             height=1000,
-        ).opts(hv.opts.Graph(title='Public Goods Contributions Network'))
+        ).opts(hv.opts.Graph(title='Public Goods Contributions and Funding Outcomes'))
 
         # Create the main graph plot without a colorbar
         main_graph_plot = plot.opts(
@@ -538,27 +578,29 @@ class DonationsDashboard(pm.Parameterized):
         )
 
         # Adjust the code to create a DataFrame for labels
-        # label_data = []
-        # for node, data in G.nodes(data=True):
-        #     if data.get('type') == 'public_good':
-        #         node_pos = pos[node]  # Adjust the position calculation as needed
-        #         label_data.append(
-        #             {'x': node_pos[0], 'y': node_pos[1], 'label': data['id']}
-        #         )
-        #
-        # # Convert to DataFrame
-        # label_df = pd.DataFrame(label_data)
-        #
-        # # Adjust label positions (e.g., move them to the right)
-        # label_df['x'] += 0  # Adjust this value as needed
-        #
-        # # Create labels using the DataFrame
-        # labels = hv.Labels(label_df, kdims=['x', 'y'], vdims='label').opts(
-        #     text_font_size='10pt'
-        # )
-        #
-        # # Overlay labels on the network graph
-        # main_graph_plot = main_graph_plot * labels
+        label_data = []
+        for node, data in G.nodes(data=True):
+            if data.get('type') == 'public_good':
+                node_pos = pos[node]  # Adjust the position calculation as needed
+                label_data.append(
+                    {'x': node_pos[0], 'y': node_pos[1], 'label': data['id']}
+                )
+
+        # Convert to DataFrame
+        label_df = pd.DataFrame(label_data)
+
+        # Adjust label positions (e.g., move them to the right)
+        label_df['x'] += 0  # Adjust this value as needed
+
+        # Create labels using the DataFrame
+        labels = hv.Labels(label_df, kdims=['x', 'y'], vdims='label').opts(
+            text_font_size='10pt',
+            text_align='left',
+            xoffset=0.4,
+        )
+
+        # Overlay labels on the network graph
+        main_graph_plot = main_graph_plot * labels
 
         layout = (
             main_graph_plot.opts(shared_axes=False)
