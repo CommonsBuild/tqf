@@ -318,16 +318,16 @@ class TunableQuadraticFunding(pm.Parameterized):
         return self.results
 
     def view(self):
-        results_download = pn.widgets.FileDownload(
-            callback=self.get_results_csv,
-            filename='results.csv',
-            button_type='primary',
-        )
         boosted_donations_download = pn.widgets.FileDownload(
             callback=self.get_boosted_donations_csv,
             filename='boosted_donations.csv',
             button_type='primary',
         )
+        results_download = pn.widgets.FileDownload(
+            callback=self.get_results_csv,
+            filename='results.csv',
+            button_type='primary',
+        )
         return pn.Column(
-            self, self.view_results, results_download, boosted_donations_download
+            self, self.view_results, boosted_donations_download, results_download
         )
