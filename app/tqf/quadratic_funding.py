@@ -19,20 +19,26 @@ class TunableQuadraticFunding(pm.Parameterized):
     boosted_qf = pm.DataFrame(precedence=-1)
     results = pm.DataFrame(precedence=-1)
     mechanism = pm.Selector(
+        default='Direct Donations',
         objects=[
-            'Direct Contributions',
+            'Direct Donations',
             # '1p1v',
             'Quadratic Funding',
-            'Pairwise Penalty',
+            # 'Pairwise Penalty',
             'Cluster Mapping',
-        ]
+        ],
     )
 
     @pm.depends('donations_dashboard', watch=True, on_init=True)
     def update_donations(self):
         self.donations = self.donations_dashboard.donations
 
-    def _qf(self, donations_dataset, donation_column='amountUSD'):
+    def _qf(
+        self,
+        donations_dataset,
+        donation_column='amountUSD',
+        mechanism='Quadratic Funding',
+    ):
         # Group by 'Grant Name' and 'grantAddress', then apply calculations
         qf = donations_dataset.groupby(['Grant Name', 'grantAddress']).apply(
             lambda group: pd.Series(
@@ -44,6 +50,15 @@ class TunableQuadraticFunding(pm.Parameterized):
                 }
             )
         )
+
+        if mechanism == 'Direct Donations':
+            qf['Mechanism Funding'] = 2 * qf['Direct Donations']
+
+        if mechanism == 'Cluster Mapping':
+            qf['Mechanism Funding'] = self.donation_profile_clustermatch(
+                donations_dataset,
+                donation_column=donation_column,
+            )
 
         # Sort values if needed
         qf = qf.sort_values(by='Mechanism Funding', ascending=False)
@@ -85,11 +100,12 @@ class TunableQuadraticFunding(pm.Parameterized):
         'donations.param',
         'matching_pool',
         'matching_percentage_cap',
+        'mechanism',
         watch=True,
         on_init=True,
     )
     def update_qf(self):
-        self.qf = self._qf(self.donations.dataset)
+        self.qf = self._qf(self.donations.dataset, mechanism=self.mechanism)
 
     def view_qf_bar(self):
         return self.qf['quadratic_funding'].hvplot.bar(
@@ -267,37 +283,10 @@ class TunableQuadraticFunding(pm.Parameterized):
         results['Boost Percentage Change'] = 100 * (
             (results['Matching Funds Boosted'] - results['Matching Funds'])
             / results['Matching Funds']
-        ).round(2)
+        ).round(4)
 
         self.results = results
         return
-        # print(results)
-        results['ClusterMatch'] = self.donation_profile_clustermatch(
-            self.donations.dataset
-        )
-
-        results['Cluster Match Percentage Change'] = 100 * (
-            (results['ClusterMatch'] - results['matching']) / results['matching']
-        )
-        results['ClusterMatch Boosted'] = self.donation_profile_clustermatch(
-            self.boosted_donations, donation_column='amountUSD'
-        )
-        results['Cluster Match Boosted Percentage Change'] = 100 * (
-            (results['ClusterMatch Boosted'] - results['matching'])
-            / results['matching']
-        )
-
-        self.results = results[
-            [
-                'matching',
-                'matching_boosted',
-                'Boost Percentage Change',
-                'ClusterMatch',
-                'Cluster Match Percentage Change',
-                'ClusterMatch Boosted',
-                'Cluster Match Boosted Percentage Change',
-            ]
-        ].reset_index()
 
     def get_results_csv(self):
         output = BytesIO()
