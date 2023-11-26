@@ -73,6 +73,6 @@ tegr1_app = pn.Tabs(
     ('Boost Factory', tegr1_boost_factory.view()),
     ('Tunable Quadradic Funding', tegr1_qf.view()),
     ('Outcomes', outcomes.view()),
-    active=4,
+    active=5,
     dynamic=True,
 )

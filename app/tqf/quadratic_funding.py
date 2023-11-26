@@ -11,7 +11,7 @@ class TunableQuadraticFunding(pm.Parameterized):
     donations_dashboard = pm.Selector(doc='Donations Dataset')
     boost_factory = pm.Selector()
     boosts = pm.DataFrame(precedence=-1)
-    boost_coefficient = pm.Number(1, bounds=(0, 10), step=0.1)
+    boost_coefficient = pm.Number(2, bounds=(0, 10), step=0.1)
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Number(0.2, step=0.01, bounds=(0.01, 1))
     qf = pm.DataFrame(precedence=-1)
@@ -19,7 +19,7 @@ class TunableQuadraticFunding(pm.Parameterized):
     boosted_qf = pm.DataFrame(precedence=-1)
     results = pm.DataFrame(precedence=-1)
     mechanism = pm.Selector(
-        default='Direct Donations',
+        default='Quadratic Funding',
         objects=[
             'Direct Donations',
             # '1p1v',
@@ -43,28 +43,30 @@ class TunableQuadraticFunding(pm.Parameterized):
         qf = donations_dataset.groupby(['Grant Name', 'grantAddress']).apply(
             lambda group: pd.Series(
                 {
-                    'Mechanism Funding': np.square(
+                    'Funding Mechanism': np.square(
                         np.sum(np.sqrt(group[donation_column]))
                     ),
                     'Direct Donations': group['amountUSD'].sum(),
+                    'Boosted Donations': group[donation_column].sum(),
                 }
             )
         )
 
         if mechanism == 'Direct Donations':
-            qf['Mechanism Funding'] = 2 * qf['Direct Donations']
+            qf['Funding Mechanism'] = 2 * qf['Boosted Donations']
+        qf = qf.drop('Boosted Donations', axis=1)
 
         if mechanism == 'Cluster Mapping':
-            qf['Mechanism Funding'] = self.donation_profile_clustermatch(
+            qf['Funding Mechanism'] = self.donation_profile_clustermatch(
                 donations_dataset,
                 donation_column=donation_column,
             )
 
         # Sort values if needed
-        qf = qf.sort_values(by='Mechanism Funding', ascending=False)
+        qf = qf.sort_values(by='Funding Mechanism', ascending=False)
 
         # Calculate 'Matching Funding'
-        qf['Matching Funding'] = qf['Mechanism Funding'] - qf['Direct Donations']
+        qf['Matching Funding'] = qf['Funding Mechanism'] - qf['Direct Donations']
 
         # Calculate the stochastic vector funding distribution
         qf['Matching Distribution'] = (
@@ -93,6 +95,9 @@ class TunableQuadraticFunding(pm.Parameterized):
 
         # Apply the Matching Pool
         qf['Matching Funds'] = qf['Matching Distribution'] * self.matching_pool
+
+        # Apply the Matching Pool
+        qf['Total Funding'] = qf['Matching Funds'] + qf['Direct Donations']
 
         return qf
 
@@ -127,14 +132,18 @@ class TunableQuadraticFunding(pm.Parameterized):
         self.boosts = self.boost_factory.collect_boosts()
 
     @pm.depends(
-        'boosts', 'boost_coefficient', 'donations.dataset', watch=True, on_init=True
+        'boosts',
+        'boost_coefficient',
+        'donations.dataset',
+        watch=True,
+        on_init=True,
     )
     def update_boosted_donations(self):
         # Merge Boosts into Donations
         boosted_donations = (
             self.donations.dataset.merge(
                 self.boosts,
-                how='outer',
+                how='left',
                 left_on='voter',
                 right_on='address',
             )
@@ -143,6 +152,8 @@ class TunableQuadraticFunding(pm.Parameterized):
         )
 
         # Non-boosted donations are initially set to 0
+        print('Boosted Donations Nan')
+        print(boosted_donations.isna().sum())
         boosted_donations = boosted_donations.fillna(0)
 
         # Set the Boost Coefficient
@@ -167,11 +178,17 @@ class TunableQuadraticFunding(pm.Parameterized):
         on_init=True,
     )
     def update_boosted_qf(self):
-        boosted_qf = self._qf(self.boosted_donations, donation_column='Boosted Amount')
+        print('Update Boosted QF')
+        boosted_qf = self._qf(
+            self.boosted_donations,
+            donation_column='Boosted Amount',
+            mechanism=self.mechanism,
+        )
+        print(boosted_qf['Total Funding'])
         self.boosted_qf = boosted_qf
 
     def donation_profile_clustermatch(self, donation_df, donation_column='amountUSD'):
-        donation_df = self.donations.dataset.pivot_table(
+        donation_df = donation_df.pivot_table(
             index='voter',
             columns=['Grant Name', 'grantAddress'],
             values=donation_column,
@@ -211,7 +228,7 @@ class TunableQuadraticFunding(pm.Parameterized):
                     'Percentage of SMEs': group['address'].nunique() / total_smes,
                     'Total SME Donations': group[donation_column].sum(),
                     'Percent of Total SME Donations': group[donation_column].sum()
-                    / total_smes,
+                    / total_sme_donations,
                     'Mean SME Donation': group[donation_column].mean(),
                     'Median SME Donation': group[donation_column].median(),
                     'Max SME Donations': group[donation_column].max(),
@@ -285,9 +302,10 @@ class TunableQuadraticFunding(pm.Parameterized):
                 on=['Grant Name'],
             )
         )
+        # print(results)
         results['Boost Percentage Change'] = 100 * (
-            (results['Matching Funds Boosted'] - results['Matching Funds'])
-            / results['Matching Funds']
+            (results['Total Funding Boosted'] - results['Total Funding'])
+            / results['Total Funding']
         ).round(4)
 
         self.results = results
@@ -310,6 +328,12 @@ class TunableQuadraticFunding(pm.Parameterized):
 
     def view_results(self):
         return self.results
+        # return self.results.style.format(
+        #     '{:.2f}',
+        #     subset=pd.IndexSlice[
+        #         :, self.results.select_dtypes(include=['float']).columns
+        #     ],
+        # )
 
     def view(self):
         boosted_donations_download = pn.widgets.FileDownload(
