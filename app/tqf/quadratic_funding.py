@@ -15,7 +15,7 @@ class TunableQuadraticFunding(pm.Parameterized):
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Number(0.2, step=0.01, bounds=(0.01, 1))
     qf = pm.DataFrame(precedence=-1)
-    boosted_donations = pm.DataFrame(precedence=1)
+    boosted_donations = pm.DataFrame(precedence=-1)
     boosted_qf = pm.DataFrame(precedence=-1)
     results = pm.DataFrame(precedence=-1)
     mechanism = pm.Selector(
@@ -131,11 +131,15 @@ class TunableQuadraticFunding(pm.Parameterized):
     )
     def update_boosted_donations(self):
         # Merge Boosts into Donations
-        boosted_donations = self.donations.dataset.merge(
-            self.boosts,
-            how='outer',
-            left_on='voter',
-            right_on='address',
+        boosted_donations = (
+            self.donations.dataset.merge(
+                self.boosts,
+                how='outer',
+                left_on='voter',
+                right_on='address',
+            )
+            .rename({'projectId_x': 'projectId'}, axis=1)
+            .drop('projectId_y', axis=1)
         )
 
         # Non-boosted donations are initially set to 0
@@ -158,6 +162,7 @@ class TunableQuadraticFunding(pm.Parameterized):
         'boosted_donations',
         'matching_pool',
         'matching_percentage_cap',
+        'mechanism',
         watch=True,
         on_init=True,
     )
