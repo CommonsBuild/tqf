@@ -529,7 +529,7 @@ class DonationsDashboard(pm.Parameterized):
             color_bar = plot.handles.get('color_bar', None)
             if color_bar:
                 color_bar.major_label_text_font_size = (
-                    '12pt'  # Adjust the font size as needed
+                    '14pt'  # Adjust the font size as needed
                 )
 
         points_for_colorbar = points_for_colorbar.opts(hooks=[customize_colorbar])
@@ -568,8 +568,8 @@ class DonationsDashboard(pm.Parameterized):
                 width=plot_width,
                 colorbar_position='left',
                 fontsize={
-                    'title': 16,
-                    'ticks': 10,
+                    'title': 22,
+                    'ticks': 14,
                 },
                 # fontscale=2,
             )
@@ -657,7 +657,7 @@ class DonationsDashboard(pm.Parameterized):
 
         # Create labels using the DataFrame
         labels = hv.Labels(label_df, kdims=['x', 'y'], vdims='label').opts(
-            text_font_size='10pt',
+            text_font_size='11pt',
             text_align='left',
             xoffset=0.4,
         )
