@@ -313,7 +313,7 @@ class DonationsDashboard(pm.Parameterized):
             ].sum()
 
         else:
-            total_funding_per_public_good = funding_outcomes['Total Funding Boosted']
+            total_funding_per_public_good = funding_outcomes['Matching Funds Boosted']
 
         # Find the max and min total donations for normalization
         max_size = total_funding_per_public_good.max()
@@ -348,7 +348,7 @@ class DonationsDashboard(pm.Parameterized):
                 else:
                     G.nodes[node]['size'] = funding_outcomes[
                         funding_outcomes['Grant Name'] == node
-                    ]['Total Funding Boosted'].iloc[0]
+                    ]['Matching Funds Boosted'].iloc[0]
                 G.nodes[node]['id'] = node
                 G.nodes[node]['shape'] = 'square'
                 G.nodes[node]['type'] = 'public_good'
@@ -415,13 +415,14 @@ class DonationsDashboard(pm.Parameterized):
 
         def get_edge_alpha(edge):
             if hasattr(self, 'sme_list') and edge[0] in self.sme_list:
-                return 0.95
+                # return 0.95
+                return 0
             else:
                 return 0
 
         tooltips = [
             ('Id', '@id'),
-            ('Total Funding Boosted', '$@size{0,0.00}'),
+            ('Matching Funds Boosted', '$@size{0,0.00}'),
             ('Type', '@type'),
         ]
         hover = HoverTool(tooltips=tooltips)
@@ -435,13 +436,13 @@ class DonationsDashboard(pm.Parameterized):
                 u
             ]  # or node_colors[v] depending on your preference
 
-        # Create a DataFrame for the Points plot with 'Grant Name' and 'Total Funding Boosted'
+        # Create a DataFrame for the Points plot with 'Grant Name' and 'Matching Funds Boosted'
         if funding_outcomes is None:
             public_goods_data = (
                 donations_df.groupby('Grant Name')[donations_column].sum().reset_index()
             )
             public_goods_data.rename(
-                columns={donations_column: 'Total Funding Boosted'}, inplace=True
+                columns={donations_column: 'Matching Funds Boosted'}, inplace=True
             )
         else:
             public_goods_data = funding_outcomes
@@ -453,16 +454,16 @@ class DonationsDashboard(pm.Parameterized):
             scaling_factor = 0.02  # Scaling factor for donation amounts
             return base_size + (donation_amount * scaling_factor)
 
-        # All points have the same x-coordinate, y is the actual 'Total Funding Boosted'
+        # All points have the same x-coordinate, y is the actual 'Matching Funds Boosted'
         public_goods_data['x'] = 0
-        public_goods_data['y'] = public_goods_data['Total Funding Boosted']
-        public_goods_data['size'] = public_goods_data['Total Funding Boosted'].apply(
+        public_goods_data['y'] = public_goods_data['Matching Funds Boosted']
+        public_goods_data['size'] = public_goods_data['Matching Funds Boosted'].apply(
             lambda x: calculate_size(x)
         )  # Define calculate_size based on your graph's logic
 
         # Assuming public_goods_data is your DataFrame
-        max_funding = public_goods_data['Total Funding Boosted'].max()
-        min_funding = public_goods_data['Total Funding Boosted'].min()
+        max_funding = public_goods_data['Matching Funds Boosted'].max()
+        min_funding = public_goods_data['Matching Funds Boosted'].min()
         # high_value = max_funding * 1.3  # 110% of the max funding
         # low_value = min_funding * 0.90  # 110% of the max funding
         high_value = max_funding * 1.05  # 110% of the max funding
@@ -474,7 +475,7 @@ class DonationsDashboard(pm.Parameterized):
 
         # Create a Points plot for the colorbar and hover information
         public_goods_data[['grant_name', 'total_funding']] = public_goods_data[
-            ['Grant Name', 'Total Funding Boosted']
+            ['Grant Name', 'Matching Funds Boosted']
         ]
         points_for_colorbar = hv.Points(
             public_goods_data,
@@ -494,7 +495,7 @@ class DonationsDashboard(pm.Parameterized):
             # padding=0.5,
             # logy=True,
             # logz=True,
-            width=800,
+            width=1000,
             height=800,
             # show_frame=False,
             # xaxis=None,
@@ -511,7 +512,7 @@ class DonationsDashboard(pm.Parameterized):
                 HoverTool(
                     tooltips=[
                         ('Grant Name', '@grant_name'),
-                        ('Total Funding Boosted', '$@total_funding{0,0.00}'),
+                        ('Matching Funds Boosted', '$@total_funding{0,0.00}'),
                     ]
                 )
             ],
@@ -624,9 +625,9 @@ class DonationsDashboard(pm.Parameterized):
             edge_alpha=[get_edge_alpha(edge) for edge in G.edges(data=True)],
             node_alpha=[get_node_alpha(node) for node in G.nodes()],
             cmap='RdYlGn',
-            width=1200,
+            width=1800,
             height=1000,
-        ).opts(hv.opts.Graph(title='Public Goods Contributions and Funding Outcomes'))
+        ).opts(hv.opts.Graph(title='Public Goods Donations and Matching Funds'))
 
         # Create the main graph plot without a colorbar
         main_graph_plot = plot.opts(

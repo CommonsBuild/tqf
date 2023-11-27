@@ -128,7 +128,7 @@ class Outcomes(pm.Parameterized):
 
         return pn.Row(*charts)
 
-    @pm.depends('tqf.boosted_donations', 'tqf.results', watch=True, on_init=True)
+    @pm.depends('tqf.results', watch=True, on_init=True)
     def view_network(self):
         print('View Network')
         return self.donations_dashboard._contributions_network_view(
@@ -136,6 +136,10 @@ class Outcomes(pm.Parameterized):
             donations_column='Boosted Amount',
             funding_outcomes=self.tqf.results,
         )
+
+    @pm.depends('tqf.results', watch=True, on_init=True)
+    def view_results_bar(self):
+        return self.tqf.view_results_bar()
 
     def view(self):
         self.donations_dashboard.boost_tables = self.boost_tables
@@ -161,7 +165,11 @@ class Outcomes(pm.Parameterized):
                 self.tqf.param['matching_percentage_cap'],
                 self.tqf.param['mechanism'],
             ),
-            pn.Column(self.tqf.view_results, self.view_network),
+            pn.Column(
+                self.tqf.view_results,
+                self.view_network,
+                # pn.Row(self.view_network, self.view_results_bar),
+            ),
         )
         # Append a layout to the main area, to demonstrate the list-like API
         return view

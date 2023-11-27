@@ -303,7 +303,11 @@ class TunableQuadraticFunding(pm.Parameterized):
             )
         )
         # print(results)
-        results['Boost Percentage Change'] = 100 * (
+        results['Matching Funds Boost Percentage'] = 100 * (
+            (results['Matching Funds Boosted'] - results['Matching Funds'])
+            / results['Matching Funds']
+        ).round(4)
+        results['Total Funding Boost Percentage'] = 100 * (
             (results['Total Funding Boosted'] - results['Total Funding'])
             / results['Total Funding']
         ).round(4)
@@ -334,6 +338,25 @@ class TunableQuadraticFunding(pm.Parameterized):
         #         :, self.results.select_dtypes(include=['float']).columns
         #     ],
         # )
+
+    def view_results_bar(self):
+        return self.results.sort_values(
+            'Matching Funds Boost Percentage', ascending=False
+        ).hvplot.bar(
+            title='Matching Funds Boost Percentage',
+            x='Grant Name',
+            y='Matching Funds Boost Percentage',
+            c='Matching Funds Boost Percentage',
+            cmap='BrBG',
+            ylim=(-100, 100),
+            # clim=(-100, 100),
+            colorbar=False,
+            rot=65,
+            height=1400,
+            width=1200,
+            fontscale=1.5,
+            grid=True,
+        )
 
     def view(self):
         boosted_donations_download = pn.widgets.FileDownload(
