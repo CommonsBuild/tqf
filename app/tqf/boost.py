@@ -10,6 +10,207 @@ from holoviews.operation.datashader import datashade, dynspread, shade
 pn.extension('mathjax')
 
 
+class Boost2(pm.Parameterized):
+    distribution = pm.Selector(
+        doc='The input token distribution.',
+        instantiate=True,
+    )
+    threshold = pm.Integer(
+        default=100,
+        precedence=1,
+        bounds=(0, 1000),
+        step=1,
+        doc='Minimum number of tokens required to qualify for this boost.',
+        instantiate=True,
+    )
+    transformation = pm.Selector(
+        default='Sigmoid',
+        objects=[
+            'Threshold',
+            'MinMaxScale',
+            'LogMinMaxScale',
+            'NormalScale',
+            'LogNormalScale',
+            'Sigmoid',
+        ],
+        doc='Select the transformation to apply to the distribution.',
+    )
+    k = pm.Number(
+        default=5,
+        precedence=-1,
+        bounds=(1, 20),
+        doc='Steepness of the sigmoid curve',
+        label='k: Sigmoid Steepness',
+    )
+    b = pm.Number(
+        default=-0.2,
+        step=0.01,
+        precedence=-1,
+        bounds=(-1, 1),
+        doc='Shift of the sigmoid curve',
+        label='b: Sigmoid Shift',
+    )
+    boost_factor = pm.Number(
+        1, bounds=(0.1, 10), step=0.1, doc='Scaling factor for this boost.'
+    )
+    boost = pm.Series(precedence=-1, doc='The resulting boost coefficient.')
+
+    @staticmethod
+    def _threshold(x, t):
+        """
+        Threshold.
+        Parameters
+        ----------
+        x : ...
+        """
+
+        return (x >= t).astype(int)
+
+    @staticmethod
+    def _min_max_scale(x):
+        """
+        Min-max scale.
+        Parameters
+        ----------
+        x : ...
+        """
+
+        return pd.Series((x - x.min()) / (x.max() - x.min()))
+
+    @staticmethod
+    def _normal_scale(x):
+        """
+        Normal scale.
+        Parameters
+        ----------
+        x : ...
+        """
+
+        return ((x - x.mean()) / x.std() + 0.5).clip(lower=0, upper=1)
+
+    @staticmethod
+    def _sigmoid(x, k=1, b=0):
+        """
+        Sigmoid function.
+        Parameters
+        ----------
+        x : The input value(s) for which the sigmoid function should be computed.
+        k : The steepness of the sigmoid curve.
+        b : The x-axis shift of the sigmoid curve.
+        """
+        return 1 / (1 + np.exp(-k * (x + b)))
+
+    def threshold_boost(self):
+        x = self.distribution.dataset['balance']
+        t = self.threshold
+        return self._threshold(x, t)
+
+    def min_max_boost(self):
+        x = self.distribution.dataset['balance']
+        return self._min_max_scale(x)
+
+    def log_min_max_boost(self):
+        x = self.distribution.dataset['balance']
+        return self._min_max_scale(np.log(x))
+
+    def normal_boost(self):
+        x = self.distribution.dataset['balance']
+        return self._normal_scale(x)
+
+    def log_normal_boost(self):
+        x = self.distribution.dataset['balance']
+        return self._normal_scale(np.log(x))
+
+    def sigmoid_boost(self):
+        x = self.distribution.dataset['balance']
+        k = self.k
+        b = self.b
+        return self._min_max_scale(self._sigmoid(self.log_min_max_boost(), k=k, b=b))
+
+    def __init__(self, **params):
+        super(Boost2, self).__init__(**params)
+        self.set_threshold_bounds()
+
+    @pm.depends('distribution', watch=True, on_init=True)
+    def set_threshold_bounds(self):
+        max_balance = min(int(self.distribution.dataset['balance'].max()), 1000)
+        self.param['threshold'].bounds = (
+            0,
+            max_balance,
+        )
+
+    @pm.depends('transformation', watch=True, on_init=True)
+    def set_transformation_params_visibility(self):
+        """
+        This function controls which parameters are visible depending on which transformer is selected.
+        """
+        with pm.parameterized.batch_call_watchers(self):
+            self.param['k'].precedence = -1
+            self.param['b'].precedence = -1
+            if self.transformation in ['Sigmoid']:
+                self.param['k'].precedence = 1
+                self.param['b'].precedence = 1
+
+    @pm.depends(
+        'distribution',
+        'boost_factor',
+        'transformation',
+        'threshold',
+        'k',
+        'b',
+        watch=True,
+        on_init=True,
+    )
+    def update_boost(self):
+        # This keeps the update efficient, ensuring that events are all triggered at once.
+        with pm.parameterized.batch_call_watchers(self):
+
+            transformations = {
+                'Threshold': self.threshold_boost,
+                'MinMaxScale': self.min_max_boost,
+                'LogMinMaxScale': self.log_min_max_boost,
+                'NormalScale': self.normal_boost,
+                'LogNormalScale': self.log_normal_boost,
+                'Sigmoid': self.sigmoid_boost,
+            }
+
+            # Loads the specified transformation.
+            # If transformation is not understood, then it falls back to default transformation.
+            # If default transformation is not understood, then falls back to threshold boost.
+            transformation_function = transformations.get(
+                self.transformation,
+                transformations.get(
+                    self.param['transformation'].default, self.threshold_boost
+                ),
+            )
+
+            self.boost = (
+                self.boost_factor * transformation_function() * self.threshold_boost()
+            )
+
+    @pm.depends('boost')
+    def view_boost(self):
+        boost_view = (
+            self.boost.sort_values(ascending=False)
+            .reset_index(drop=True)
+            .hvplot.step(
+                ylim=(-0.01, self.boost_factor + 0.01),
+                title='Boost Factor',
+                ylabel='boost',
+            )
+            .opts(
+                shared_axes=False,
+                yformatter=NumeralTickFormatter(format='0.00'),
+                width=650,
+                height=320,
+            )
+        )
+        return boost_view
+
+    def view(self):
+        return pn.Row(self, self.view_boost)
+
+
 class Boost(pm.Parameterized):
     token_logy = pm.Boolean(
         False,
@@ -35,7 +236,7 @@ class Boost(pm.Parameterized):
         ],
     )
     boost_factor = pm.Number(1, bounds=(0.1, 10), step=0.1)
-    threshold = pm.Integer(default=100, precedence=-1, bounds=(0, 10_000), step=1)
+    threshold = pm.Integer(default=100, precedence=-1, bounds=(0, 1000), step=1)
     k = pm.Number(
         default=5,
         precedence=-1,
@@ -65,7 +266,7 @@ class Boost(pm.Parameterized):
         'signal', 'token_logy', 'threshold', 'k', 'b', 'boost_factor', watch=True
     )
     def update_distribution(self):
-        signal = self.signal
+        signal = self.distribution.dataset['balance']
         threshold = self.threshold
 
         with pm.edit_constant(self):

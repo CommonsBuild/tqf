@@ -13,7 +13,6 @@ class Dataset(pm.Parameterized):
         default=None,
         path='./app/input/*.csv',
     )
-    page_size = pm.Integer(default=20, precedence=-1)
     dataset = pm.DataFrame(
         default=None,
     )
@@ -25,26 +24,6 @@ class Dataset(pm.Parameterized):
     @pm.depends('file', on_init=True, watch=True)
     def load_file(self):
         self.dataset = pd.read_csv(self.file)
-
-    @pm.depends('dataset', 'page_size')
-    def view(self):
-        view = pn.panel(
-            pn.Param(
-                self.param,
-                sort=False,
-                widgets={
-                    'dataset': {
-                        'widget_type': pn.widgets.Tabulator,
-                        'layout': 'fit_columns',
-                        'page_size': self.page_size,
-                        'pagination': 'remote',
-                        'header_filters': True,
-                        'sizing_mode': 'stretch_width',
-                    },
-                },
-            )
-        )
-        return view
 
 
 class Donations(Dataset):
@@ -62,8 +41,9 @@ class Donations(Dataset):
         default=None,
         columns={'voter', 'amountUSD', 'grantAddress'},
         label='Donations Dataset',
-        precedence=-1,
+        precedence=1,
     )
+    page_size = pm.Integer(default=20, precedence=-1)
 
     @pm.depends('dataset', 'grant_names_dataset', watch=True, on_init=True)
     def add_grant_names(self):
@@ -77,6 +57,27 @@ class Donations(Dataset):
                 right_on='Grant Address',
             )
 
+    @pm.depends('dataset', 'page_size')
+    def view(self):
+        view = pn.panel(
+            pn.Param(
+                self.param,
+                sort=False,
+                widgets={
+                    'dataset': {
+                        'widget_type': pn.widgets.Tabulator,
+                        'layout': 'fit_columns',
+                        'page_size': self.page_size,
+                        'pagination': None,
+                        'height': 400,
+                        'header_filters': True,
+                        'sizing_mode': 'stretch_width',
+                    },
+                },
+            )
+        )
+        return view
+
 
 class TokenDistribution(Dataset):
     file = pm.FileSelector(
@@ -88,7 +89,30 @@ class TokenDistribution(Dataset):
         default=None, columns={'address', 'balance'}, label='Token Dataset'
     )
     logy = pm.Boolean(True)
+    page_size = pm.Integer(default=20, precedence=-1)
 
+    @pm.depends('dataset')
+    def view_table(self):
+        view = pn.panel(
+            pn.Param(
+                self.param,
+                sort=False,
+                widgets={
+                    'dataset': {
+                        'widget_type': pn.widgets.Tabulator,
+                        'layout': 'fit_columns',
+                        'page_size': self.page_size,
+                        'pagination': None,
+                        'height': 400,
+                        'header_filters': True,
+                        'sizing_mode': 'stretch_width',
+                    },
+                },
+            )
+        )
+        return view
+
+    @pm.depends('dataset', 'logy')
     def view_distribution(self):
         # Use the Bokeh Hover Tool to show formatted numbers in the hover tooltip for balances
         hover = HoverTool(
@@ -108,7 +132,11 @@ class TokenDistribution(Dataset):
                 hover_cols=['address', 'balance'],
                 title=self.name,
                 tools=[hover],
-                size=200,
+                size=800,
+                line_width=2,
+                height=800,
+                xlim=(-10, len(self.dataset) + 10),
+                responsive=True,
                 color='white',
                 line_color='skyblue',
                 xlabel='index',
@@ -117,6 +145,9 @@ class TokenDistribution(Dataset):
         )
 
         return distribution_view
+
+    def view(self):
+        return pn.Column(self.view_table(), self.view_distribution())
 
 
 class TEGR1_TEC(TokenDistribution):

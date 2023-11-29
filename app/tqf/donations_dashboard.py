@@ -627,7 +627,7 @@ class DonationsDashboard(pm.Parameterized):
             cmap='RdYlGn',
             width=1800,
             height=1000,
-        ).opts(hv.opts.Graph(title='Public Goods Donations and Matching Funds'))
+        ).opts(hv.opts.Graph(title='Public Goods Donations and Funding outcomes'))
 
         # Create the main graph plot without a colorbar
         main_graph_plot = plot.opts(

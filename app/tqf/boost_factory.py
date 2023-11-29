@@ -8,7 +8,7 @@ from .boost import Boost
 class BoostFactory(pm.Parameterized):
     boost_template = pm.Selector(precedence=-1)
     boosts = pm.List(default=[], class_=Boost, precedence=-1)
-    new_boost = pm.Action(lambda self: self._new_boost())
+    # new_boost = pm.Action(lambda self: self._new_boost())
     remove_boost = pm.Action(lambda self: self._remove_boost())
     combine_method = pm.Selector(default='max', objects=['max', 'sum'])
 
@@ -20,9 +20,9 @@ class BoostFactory(pm.Parameterized):
     def _on_boost_change(self, event):
         self.param.trigger('combine_method')
 
-    def _new_boost(self):
-        self.boosts.append((Boost(**self.boost_template.param.values())))
-        self.param.trigger('boosts')
+    # def _new_boost(self):
+    #     self.boosts.append((Boost(**self.boost_template.param.values())))
+    #     self.param.trigger('boosts')
 
     def _remove_boost(self):
         if len(self.boosts):
