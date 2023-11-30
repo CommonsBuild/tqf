@@ -51,7 +51,7 @@ class Boost2(pm.Parameterized):
         label='b: Sigmoid Shift',
     )
     boost_factor = pm.Number(
-        1, bounds=(0.1, 10), step=0.1, doc='Scaling factor for this boost.'
+        2, bounds=(1, 10), step=0.1, doc='Scaling factor for this boost.'
     )
     boost = pm.Series(precedence=-1, doc='The resulting boost coefficient.')
 
@@ -67,7 +67,7 @@ class Boost2(pm.Parameterized):
         return (x >= t).astype(int)
 
     @staticmethod
-    def _min_max_scale(x):
+    def _linear_scale(x, t):
         """
         Min-max scale.
         Parameters
@@ -75,57 +75,61 @@ class Boost2(pm.Parameterized):
         x : ...
         """
 
-        return pd.Series((x - x.min()) / (x.max() - x.min()))
+        return pd.Series((x - t) / (x.max() - t))
 
     @staticmethod
-    def _normal_scale(x):
+    def _normal_scale(x, t):
         """
         Normal scale.
         Parameters
         ----------
         x : ...
         """
+        mu = x.mean()
+        sigma = x.std()
+        low = x[x >= t].min()
+        high = x.max()
 
-        return ((x - x.mean()) / x.std() + 0.5).clip(lower=0, upper=1)
+        z_low = (low - mu) / sigma
+        z_high = (high - mu) / sigma
+        z = (x - mu) / sigma
+
+        return pd.series((z - z_low) / (z_high - z_low))
 
     @staticmethod
-    def _sigmoid(x, k=1, b=0):
-        """
-        Sigmoid function.
-        Parameters
-        ----------
-        x : The input value(s) for which the sigmoid function should be computed.
-        k : The steepness of the sigmoid curve.
-        b : The x-axis shift of the sigmoid curve.
-        """
-        return 1 / (1 + np.exp(-k * (x + b)))
+    def _sigmoid(x, k, t):
+        return 1 / (1 + np.exp(-k * (x - t)))
 
     def threshold_boost(self):
         x = self.distribution.dataset['balance']
         t = self.threshold
         return self._threshold(x, t)
 
-    def min_max_boost(self):
+    def linear_boost(self):
         x = self.distribution.dataset['balance']
-        return self._min_max_scale(x)
+        t = self.threshold
+        return self._linear_scale(x, t)
 
-    def log_min_max_boost(self):
+    def log_linear_boost(self):
         x = self.distribution.dataset['balance']
-        return self._min_max_scale(np.log(x))
+        t = self.threshold
+        return self._linear_scale(np.log(x + 1), np.log(t + 1))
 
     def normal_boost(self):
         x = self.distribution.dataset['balance']
-        return self._normal_scale(x)
+        t = self.threshold
+        return self._normal_scale(x, t)
 
     def log_normal_boost(self):
         x = self.distribution.dataset['balance']
-        return self._normal_scale(np.log(x))
+        t = self.threshold
+        return self._normal_scale(np.log(x + 1), np.log(t + 1))
 
     def sigmoid_boost(self):
         x = self.distribution.dataset['balance']
         k = self.k
-        b = self.b
-        return self._min_max_scale(self._sigmoid(self.log_min_max_boost(), k=k, b=b))
+        t = self.threshold
+        return self._sigmoid(x, k, t)
 
     def __init__(self, **params):
         super(Boost2, self).__init__(**params)
@@ -146,10 +150,8 @@ class Boost2(pm.Parameterized):
         """
         with pm.parameterized.batch_call_watchers(self):
             self.param['k'].precedence = -1
-            self.param['b'].precedence = -1
             if self.transformation in ['Sigmoid']:
                 self.param['k'].precedence = 1
-                self.param['b'].precedence = 1
 
     @pm.depends(
         'distribution',
@@ -157,7 +159,6 @@ class Boost2(pm.Parameterized):
         'transformation',
         'threshold',
         'k',
-        'b',
         watch=True,
         on_init=True,
     )
@@ -167,10 +168,10 @@ class Boost2(pm.Parameterized):
 
             transformations = {
                 'Threshold': self.threshold_boost,
-                'MinMaxScale': self.min_max_boost,
-                'LogMinMaxScale': self.log_min_max_boost,
-                'NormalScale': self.normal_boost,
-                'LogNormalScale': self.log_normal_boost,
+                'Linear': self.linear_boost,
+                'LogLinear': self.log_linear_boost,
+                'Normal': self.normal_boost,
+                'LogNormal': self.log_normal_boost,
                 'Sigmoid': self.sigmoid_boost,
             }
 
@@ -185,8 +186,12 @@ class Boost2(pm.Parameterized):
             )
 
             self.boost = (
-                self.boost_factor * transformation_function() * self.threshold_boost()
-            )
+                1 + (self.boost_factor - 1) * transformation_function()
+            ) * self.threshold_boost()
+
+            # self.boost = (self.boost_factor * transformation_function()).clip(
+            #     lower=1
+            # ) * self.threshold_boost()
 
     @pm.depends('boost')
     def view_boost(self):
@@ -275,14 +280,14 @@ class Boost(pm.Parameterized):
                     self.distribution = self._threshold(signal, threshold)
                 elif self.transformation == 'Sigmoid':
                     self.distribution = self._sigmoid_scale(signal, k=self.k, b=self.b)
-                elif self.transformation == 'MinMaxScale':
-                    self.distribution = self._min_max_scale(signal)
-                elif self.transformation == 'NormalScale':
+                elif self.transformation == 'Linear':
+                    self.distribution = self._linear_scale(signal)
+                elif self.transformation == 'LogLinear':
+                    self.distribution = self._log_linear_scale(signal)
+                elif self.transformation == 'Normal':
                     self.distribution = self._normal_scale(signal)
-                elif self.transformation == 'LogNormalScale':
+                elif self.transformation == 'LogNormal':
                     self.distribution = self._log_normal_scale(signal)
-                elif self.transformation == 'LogMinMaxScale':
-                    self.distribution = self._log_minmax_scale(signal)
                 else:
                     raise (Exception(f'Unkown Transformation: {self.transformation}'))
                 self.distribution = self.boost_factor * self.distribution
