@@ -16,9 +16,9 @@ class Boost2(pm.Parameterized):
         instantiate=True,
     )
     threshold = pm.Integer(
-        default=100,
+        default=1,
         precedence=1,
-        bounds=(0, 1000),
+        bounds=(1, 1000),
         step=1,
         doc='Minimum number of tokens required to qualify for this boost.',
         instantiate=True,
@@ -27,26 +27,27 @@ class Boost2(pm.Parameterized):
         default='Sigmoid',
         objects=[
             'Threshold',
-            'MinMaxScale',
-            'LogMinMaxScale',
-            'NormalScale',
-            'LogNormalScale',
+            'Linear',
+            'LogLinear',
+            'Normal',
+            'LogNormal',
             'Sigmoid',
         ],
         doc='Select the transformation to apply to the distribution.',
     )
     k = pm.Number(
-        default=5,
+        default=-5,
         precedence=-1,
-        bounds=(1, 20),
+        bounds=(-10, -1),
         doc='Steepness of the sigmoid curve',
         label='k: Sigmoid Steepness',
+        step=0.001,
     )
     b = pm.Number(
-        default=-0.2,
-        step=0.01,
+        default=1,
+        step=1,
         precedence=-1,
-        bounds=(-1, 1),
+        bounds=(-10, 10),
         doc='Shift of the sigmoid curve',
         label='b: Sigmoid Shift',
     )
@@ -75,7 +76,14 @@ class Boost2(pm.Parameterized):
         x : ...
         """
 
-        return pd.Series((x - t) / (x.max() - t))
+        print('Linear SCALE')
+        linear = pd.Series((x - t + 1) / (x.max() - t + 1))
+
+        print(linear.min())
+        print(linear.max())
+        print(linear.mean())
+
+        return linear
 
     @staticmethod
     def _normal_scale(x, t):
@@ -85,20 +93,14 @@ class Boost2(pm.Parameterized):
         ----------
         x : ...
         """
-        mu = x.mean()
-        sigma = x.std()
-        low = x[x >= t].min()
-        high = x.max()
-
-        z_low = (low - mu) / sigma
-        z_high = (high - mu) / sigma
-        z = (x - mu) / sigma
-
-        return pd.series((z - z_low) / (z_high - z_low))
+        mu = x[x >= t].mean()
+        sigma = x[x >= t].std()
+        normal = pd.Series(x - mu) / sigma
+        return normal.clip(lower=0, upper=1)
 
     @staticmethod
-    def _sigmoid(x, k, t):
-        return 1 / (1 + np.exp(-k * (x - t)))
+    def _sigmoid(x, k, b):
+        return 1 / (1 + np.exp(-np.exp(k) * (x + b)))
 
     def threshold_boost(self):
         x = self.distribution.dataset['balance']
@@ -128,20 +130,28 @@ class Boost2(pm.Parameterized):
     def sigmoid_boost(self):
         x = self.distribution.dataset['balance']
         k = self.k
+        b = self.b
         t = self.threshold
-        return self._sigmoid(x, k, t)
+        return self._sigmoid(x, k=k, b=b)
 
     def __init__(self, **params):
         super(Boost2, self).__init__(**params)
-        self.set_threshold_bounds()
+        self.set_bounds()
 
     @pm.depends('distribution', watch=True, on_init=True)
-    def set_threshold_bounds(self):
-        max_balance = min(int(self.distribution.dataset['balance'].max()), 1000)
+    def set_bounds(self):
+        balances = self.distribution.dataset['balance']
+        max_balance = min(int(balances.max()), 1000)
         self.param['threshold'].bounds = (
-            0,
+            1,
             max_balance,
         )
+        self.threshold = max(1, min(self.threshold, max_balance))
+        self.param['b'].bounds = (
+            -max_balance,
+            max_balance,
+        )
+        self.b = max(-max_balance, min(self.b, max_balance))
 
     @pm.depends('transformation', watch=True, on_init=True)
     def set_transformation_params_visibility(self):
@@ -150,8 +160,10 @@ class Boost2(pm.Parameterized):
         """
         with pm.parameterized.batch_call_watchers(self):
             self.param['k'].precedence = -1
+            self.param['b'].precedence = -1
             if self.transformation in ['Sigmoid']:
                 self.param['k'].precedence = 1
+                self.param['b'].precedence = 1
 
     @pm.depends(
         'distribution',
@@ -159,6 +171,7 @@ class Boost2(pm.Parameterized):
         'transformation',
         'threshold',
         'k',
+        'b',
         watch=True,
         on_init=True,
     )
@@ -175,19 +188,14 @@ class Boost2(pm.Parameterized):
                 'Sigmoid': self.sigmoid_boost,
             }
 
-            # Loads the specified transformation.
-            # If transformation is not understood, then it falls back to default transformation.
-            # If default transformation is not understood, then falls back to threshold boost.
-            transformation_function = transformations.get(
-                self.transformation,
-                transformations.get(
-                    self.param['transformation'].default, self.threshold_boost
-                ),
-            )
+            # Loads the selected transformation.
+            transformation_function = transformations[self.transformation]
 
             self.boost = (
                 1 + (self.boost_factor - 1) * transformation_function()
             ) * self.threshold_boost()
+
+            self.boost = self.boost.rename({'balance': 'boost'})
 
             # self.boost = (self.boost_factor * transformation_function()).clip(
             #     lower=1
@@ -233,10 +241,10 @@ class Boost(pm.Parameterized):
         default='Sigmoid',
         objects=[
             'Threshold',
-            'MinMaxScale',
-            'LogMinMaxScale',
-            'NormalScale',
-            'LogNormalScale',
+            'Linear',
+            'LogLinear',
+            'Normal',
+            'LogNormal',
             'Sigmoid',
         ],
     )
