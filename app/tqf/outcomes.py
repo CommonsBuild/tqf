@@ -35,7 +35,7 @@ class Outcomes(pm.Parameterized):
 
     @pm.depends('boost_factory.param', watch=True, on_init=True)
     def boost_tables(self):
-        collected_boosts = self.boost_factory.collect_boosts()
+        collected_boosts = self.boost_factory.boost_outputs
         contributors = self.donations_dashboard.contributor_dataset()
 
         boosts = []
@@ -151,8 +151,8 @@ class Outcomes(pm.Parameterized):
             (
                 'Subject Matter Expertise',
                 pn.Column(
-                    self.view_sme_tokens(),
-                    self.view_boost_tables(),
+                    # self.view_sme_tokens(),
+                    # self.view_boost_tables(),
                 ),
             )
         )
@@ -166,7 +166,7 @@ class Outcomes(pm.Parameterized):
                 self.tqf.param['mechanism'],
             ),
             pn.Column(
-                self.tqf.view_results,
+                # self.tqf.view_results,
                 self.view_network,
                 # pn.Row(self.view_network, self.view_results_bar),
             ),

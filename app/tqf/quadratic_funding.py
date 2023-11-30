@@ -129,7 +129,7 @@ class TunableQuadraticFunding(pm.Parameterized):
 
     @pm.depends('boost_factory.param', watch=True, on_init=True)
     def update_boosts(self):
-        self.boosts = self.boost_factory.collect_boosts()
+        self.boosts = self.boost_factory.boost_outputs
 
     @pm.depends(
         'boosts',

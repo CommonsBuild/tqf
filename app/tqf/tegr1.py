@@ -58,22 +58,24 @@ tegr1_tea_boost = Boost2(
 
 
 tegr1_boost_factory = BoostFactory(
-    name='TEGR1 Boost Factory', boost_template=tegr1_tec_boost
+    name='TEGR1 Boost Factory',
+    boost_template=tegr1_tec_boost,
+    boosts=[tegr1_tec_boost, tegr1_tea_boost],
 )
 tegr1_boost_factory.param['boost_template'].objects = [tegr1_tec_boost, tegr1_tea_boost]
 # tegr1_boost_factory._new_boost()
-tegr1_boost_factory.boost_template = tegr1_tea_boost
+# tegr1_boost_factory.boost_template = tegr1_tea_boost
 # tegr1_boost_factory._new_boost()
 
-# tegr1_qf = TunableQuadraticFunding(
-#     donations_dashboard=tegr1_donations_dashboard, boost_factory=tegr1_boost_factory
-# )
-#
-# outcomes = Outcomes(
-#     donations_dashboard=tegr1_donations_dashboard,
-#     boost_factory=tegr1_boost_factory,
-#     tqf=tegr1_qf,
-# )
+tegr1_qf = TunableQuadraticFunding(
+    donations_dashboard=tegr1_donations_dashboard, boost_factory=tegr1_boost_factory
+)
+
+outcomes = Outcomes(
+    donations_dashboard=tegr1_donations_dashboard,
+    boost_factory=tegr1_boost_factory,
+    tqf=tegr1_qf,
+)
 
 tegr1_app = pn.Tabs(
     ('Donations', pn.Column(tegr1_donations.view(), tegr1_donations_dashboard.view())),
@@ -88,9 +90,9 @@ tegr1_app = pn.Tabs(
         pn.Row(tegr1_tea_boost.view()),
     ),
     # ('Boost Tuning', tegr1_tec_boost.view()),
-    # ('Boost Factory', tegr1_boost_factory.view()),
-    # ('Tunable Quadradic Funding', tegr1_qf.view()),
-    # ('Outcomes', outcomes.view()),
+    ('Boost Factory', tegr1_boost_factory.view()),
+    ('Tunable Quadradic Funding', tegr1_qf.view()),
+    ('Outcomes', outcomes.view()),
     active=1,
     dynamic=True,
 )

@@ -14,6 +14,7 @@ class Boost2(pm.Parameterized):
     distribution = pm.Selector(
         doc='The input token distribution.',
         instantiate=True,
+        per_instance=True,
     )
     threshold = pm.Integer(
         default=1,
@@ -22,6 +23,7 @@ class Boost2(pm.Parameterized):
         step=1,
         doc='Minimum number of tokens required to qualify for this boost.',
         instantiate=True,
+        per_instance=True,
     )
     transformation = pm.Selector(
         default='Sigmoid',
@@ -135,6 +137,9 @@ class Boost2(pm.Parameterized):
         return self._sigmoid(x, k=k, b=b)
 
     def __init__(self, **params):
+        threshold = params.get('threshold', 1)
+        threshold = min(threshold, self.param['threshold'].bounds[1])
+        params['threshold'] = threshold
         super(Boost2, self).__init__(**params)
         self.set_bounds()
 
@@ -142,16 +147,18 @@ class Boost2(pm.Parameterized):
     def set_bounds(self):
         balances = self.distribution.dataset['balance']
         max_balance = min(int(balances.max()), 1000)
+        self.threshold = max(1, min(self.threshold, max_balance))
         self.param['threshold'].bounds = (
             1,
             max_balance,
         )
-        self.threshold = max(1, min(self.threshold, max_balance))
+        self.b = max(-max_balance, min(self.b, max_balance))
         self.param['b'].bounds = (
             -max_balance,
             max_balance,
         )
-        self.b = max(-max_balance, min(self.b, max_balance))
+        self.param.trigger('threshold', 'b')
+        print('HEEEEEEEEEEEEEERRRRRRRRRRRRRRRREEEEEEEEEEE')
 
     @pm.depends('transformation', watch=True, on_init=True)
     def set_transformation_params_visibility(self):
@@ -195,11 +202,7 @@ class Boost2(pm.Parameterized):
                 1 + (self.boost_factor - 1) * transformation_function()
             ) * self.threshold_boost()
 
-            self.boost = self.boost.rename({'balance': 'boost'})
-
-            # self.boost = (self.boost_factor * transformation_function()).clip(
-            #     lower=1
-            # ) * self.threshold_boost()
+            self.distribution.dataset['Boost'] = self.boost
 
     @pm.depends('boost')
     def view_boost(self):
