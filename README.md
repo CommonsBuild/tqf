@@ -74,13 +74,14 @@ Installation Requirements
 * Git
 
 To run this app locally follow the steps below:
-1. Clone the [repository](https://github.com/CommonsBuild/alloha)
+1. Clone the [repository](https://github.com/CommonsBuild/alloha) and checkout the development branch.
 ```
 git clone git@github.com:CommonsBuild/alloha.git
+cd alloha
+git checkout ygg
 ```
 2. Install the dependencies and activate python environment
 ```
-cd alloha
 poetry install
 poetry shell
 ```
