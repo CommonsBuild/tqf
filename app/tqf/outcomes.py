@@ -160,7 +160,7 @@ class Outcomes(pm.Parameterized):
 
         view = pn.Row(
             pn.Column(
-                self.tqf.param['boost_coefficient'],
+                self.tqf.param['boost_factor'],
                 self.tqf.param['matching_pool'],
                 self.tqf.param['matching_percentage_cap'],
                 self.tqf.param['mechanism'],

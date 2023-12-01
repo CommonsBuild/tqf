@@ -11,7 +11,7 @@ class TunableQuadraticFunding(pm.Parameterized):
     donations_dashboard = pm.Selector(doc='Donations Dataset')
     boost_factory = pm.Selector()
     boosts = pm.DataFrame(precedence=-1)
-    boost_coefficient = pm.Number(2, bounds=(0, 10), step=0.1)
+    boost_factor = pm.Number(2, bounds=(0, 10), step=0.1)
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Number(0.2, step=0.01, bounds=(0.01, 1))
     qf = pm.DataFrame(precedence=-1)
@@ -133,7 +133,7 @@ class TunableQuadraticFunding(pm.Parameterized):
 
     @pm.depends(
         'boosts',
-        'boost_coefficient',
+        'boost_factor',
         'donations.dataset',
         watch=True,
         on_init=True,
@@ -158,7 +158,7 @@ class TunableQuadraticFunding(pm.Parameterized):
 
         # Set the Boost Coefficient
         boosted_donations['Boost Coefficient'] = (
-            1 + self.boost_coefficient * boosted_donations['total_boost']
+            1 + self.boost_factor * boosted_donations['total_boost']
         )
 
         # Set the Boosted Amount as a Boost Coefficient * Donation Amount
@@ -212,7 +212,7 @@ class TunableQuadraticFunding(pm.Parameterized):
 
         return funding
 
-    @pm.depends('boost_coefficient', watch=True, on_init=True)
+    @pm.depends('boost_factor', watch=True, on_init=True)
     def project_stats(self, donation_column='Boosted Amount'):
         boosted_donations = self.boosted_donations
         projects = self.donations_dashboard.projects_table(
@@ -302,7 +302,6 @@ class TunableQuadraticFunding(pm.Parameterized):
                 on=['Grant Name'],
             )
         )
-        # print(results)
         results['Matching Funds Boost Percentage'] = 100 * (
             (results['Matching Funds Boosted'] - results['Matching Funds'])
             / results['Matching Funds']
@@ -332,12 +331,6 @@ class TunableQuadraticFunding(pm.Parameterized):
 
     def view_results(self):
         return self.results
-        # return self.results.style.format(
-        #     '{:.2f}',
-        #     subset=pd.IndexSlice[
-        #         :, self.results.select_dtypes(include=['float']).columns
-        #     ],
-        # )
 
     def view_results_bar(self):
         return self.results.sort_values(
@@ -349,7 +342,6 @@ class TunableQuadraticFunding(pm.Parameterized):
             c='Matching Funds Boost Percentage',
             cmap='BrBG',
             ylim=(-100, 100),
-            # clim=(-100, 100),
             colorbar=False,
             rot=65,
             height=1400,
