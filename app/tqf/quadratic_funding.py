@@ -158,7 +158,7 @@ class TunableQuadraticFunding(pm.Parameterized):
 
         # Set the Boost Coefficient
         boosted_donations['Boost Coefficient'] = (
-            1 + self.boost_coefficient * boosted_donations['Total_Boost']
+            1 + self.boost_coefficient * boosted_donations['total_boost']
         )
 
         # Set the Boosted Amount as a Boost Coefficient * Donation Amount
