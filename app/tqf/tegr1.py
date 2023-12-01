@@ -78,8 +78,8 @@ outcomes = Outcomes(
 
 tegr1_app = pn.Tabs(
     ('Donations', pn.Column(tegr1_donations.view(), tegr1_donations_dashboard.view())),
-    ('TEC Token', pn.Row(tegr1_tec_distribution.view)),
-    ('TEA Token', pn.Row(tegr1_tea_distribution.view)),
+    # ('TEC Token', pn.Row(tegr1_tec_distribution.view)),
+    # ('TEA Token', pn.Row(tegr1_tea_distribution.view)),
     ('TEC Token Boost', pn.Row(tegr1_tec_boost.view())),
     ('TEA Token Boost', pn.Row(tegr1_tea_boost.view())),
     ('Boost Factory', tegr1_boost_factory.view()),

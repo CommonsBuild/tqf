@@ -53,7 +53,7 @@ class Boost(pm.Parameterized):
         doc='Shift of the sigmoid curve',
         label='b: Sigmoid Shift',
     )
-    boost_factor = pm.Number(
+    max_boost = pm.Number(
         2, bounds=(1, 10), step=0.1, doc='Scaling factor for this boost.'
     )
     boost = pm.Series(precedence=-1, doc='The resulting boost coefficient.')
@@ -173,7 +173,7 @@ class Boost(pm.Parameterized):
 
     @pm.depends(
         'distribution',
-        'boost_factor',
+        'max_boost',
         'transformation',
         'threshold',
         'k',
@@ -198,7 +198,7 @@ class Boost(pm.Parameterized):
             transformation_function = transformations[self.transformation]
 
             self.boost = (
-                1 + (self.boost_factor - 1) * transformation_function()
+                1 + (self.max_boost - 1) * transformation_function()
             ) * self.threshold_boost()
 
             self.distribution.dataset['boost'] = self.boost
@@ -208,21 +208,21 @@ class Boost(pm.Parameterized):
         boost_view = (
             self.boost.sort_values(ascending=False)
             .reset_index(drop=True)
-            .hvplot.step(
-                ylim=(-0.01, self.boost_factor + 0.01),
-                title='Boost Factor',
+            .hvplot.area(
+                ylim=(0, self.max_boost),
+                title='Boost',
                 ylabel='boost',
                 height=400,
                 responsive=True,
                 shared_axes=False,
                 yformatter=NumeralTickFormatter(format='0.00'),
+                xlabel='token_holders',
             )
         )
         return boost_view
 
     def view(self):
-        return pn.Column(
+        return pn.Row(
             self,
-            self.distribution.view_distribution,
             self.view_boost,
         )

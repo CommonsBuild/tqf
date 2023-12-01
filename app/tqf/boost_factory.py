@@ -7,42 +7,8 @@ from .boost import Boost
 
 class BoostFactory(pm.Parameterized):
     boosts = pm.ListSelector(default=[], precedence=1)
-    # new_boost = pm.Action(lambda self: self._new_boost())
-    # remove_boost = pm.Action(lambda self: self._remove_boost())
     combine_method = pm.Selector(default='max', objects=['max', 'sum'])
     boost_outputs = pm.DataFrame(precedence=1)
-
-    # @pm.depends('boosts', watch=True, on_init=True)
-    # def _update_watchers(self):
-    #     for boost in self.boosts:
-    #         boost.param.watch(self._on_boost_change, 'distribution')
-
-    # def _on_boost_change(self, event):
-    #     self.param.trigger('combine_method')
-
-    # def _new_boost(self):
-    #     self.boosts.append((Boost2(**self.boost_template.param.values())))
-    #     self.param.trigger('boosts')
-    #
-    # def _remove_boost(self):
-    #     if len(self.boosts):
-    #         self.boosts.pop()
-    #         self.param.trigger('boosts')
-
-    @pm.depends('boost_outputs')
-    def view_boosts(self):
-        if self.combine_method == 'max':
-            stacked = False
-        elif self.combine_method == 'sum':
-            stacked = True
-
-        boosts_view = self.boost_outputs.reset_index(drop=True).hvplot.area(
-            x='index',
-            y=[c for c in self.boost_outputs.columns if c.startswith('boost')],
-            stacked=stacked,
-        )
-        return boosts_view
-        # return pn.Column(*[boost.view_boost() for boost in self.boosts])
 
     @pm.depends('combine_method', 'boosts', watch=True, on_init=True)
     def update_boost_outputs(self):
@@ -86,9 +52,9 @@ class BoostFactory(pm.Parameterized):
     def view_boost_outputs(self):
         boost_outputs_view = pn.panel(
             pn.Param(
-                self.param,
+                self.param['boost_outputs'],
                 widgets={
-                    'dataset': {
+                    'boost_outputs': {
                         'widget_type': pn.widgets.Tabulator,
                         'layout': 'fit_columns',
                         'pagination': None,
@@ -102,21 +68,26 @@ class BoostFactory(pm.Parameterized):
 
         return boost_outputs_view
 
+    @pm.depends('boost_outputs')
+    def view_boosts(self):
+        if self.combine_method == 'max':
+            stacked = False
+        elif self.combine_method == 'sum':
+            stacked = True
+
+        boosts_view = self.boost_outputs.reset_index(drop=True).hvplot.area(
+            x='index',
+            y=[c for c in self.boost_outputs.columns if c.startswith('boost')],
+            stacked=stacked,
+            height=400,
+            responsive=True,
+        )
+        return boosts_view
+
     def view(self):
         return pn.Column(
-            self.param['boosts'],
+            pn.panel(self.param['boosts'], expand_button=False),
             self.param['combine_method'],
             self.view_boost_outputs(),
             self.view_boosts,
         )
-
-    # @pm.depends('boosts', on_init=True)
-    # def view_outcomes(self):
-    #     boosts = []
-    #
-    #     for boost in self.boosts:
-    #         boost_view = boost.input.view_distribution
-    #         if boost_view:
-    #             boosts.append(boost_view)
-    #
-    #     return pn.Row(*boosts)

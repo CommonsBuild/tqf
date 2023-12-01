@@ -91,7 +91,7 @@ class TokenDistribution(Dataset):
     dataset = pm.DataFrame(
         default=None, columns={'address', 'balance'}, label='Token Dataset'
     )
-    logy = pm.Boolean(True)
+    logy = pm.Boolean(True, precedence=-1)
 
     @pm.depends('dataset', 'logy')
     def view_distribution(self):
@@ -116,11 +116,11 @@ class TokenDistribution(Dataset):
                 size=800,
                 line_width=2,
                 height=400,
-                xlim=(-10, len(self.dataset) + 10),
                 responsive=True,
+                xlim=(-1, len(self.dataset)),
                 color='white',
                 line_color='skyblue',
-                xlabel='index',
+                xlabel='token_holders',
                 shared_axes=False,
             )
         )
