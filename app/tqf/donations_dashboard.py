@@ -255,8 +255,6 @@ class DonationsDashboard(pm.Parameterized):
 
         # Customize the plot using HoloViews and Bokeh
         def apply_custom_styling(plot, element):
-            print('ELEMENTTTTTT')
-            print(element)
             plot.state.axis.major_label_text_color = (
                 'red'  # Example to change label text color
             )
@@ -586,16 +584,9 @@ class DonationsDashboard(pm.Parameterized):
             for p in public_goods_positions.to_dict(orient='records')
         }
         fixed = list(pos.keys())
-        # print([i for i in public_goods_positions.iterrows()])
-        # print()
-        # print(points_for_colorbar.Points.I.array())
-        # print()
-        # print(points_for_colorbar.Points.I.dframe())
-        # print()
 
         # Graph Layout Position
         k = 10 / len(fixed)
-        print(k)
         pos = nx.spring_layout(
             G, k=k, iterations=100, weight='edge_width', seed=69, fixed=fixed, pos=pos
         )

@@ -152,8 +152,6 @@ class TunableQuadraticFunding(pm.Parameterized):
         )
 
         # Non-boosted donations are initially set to 0
-        print('Boosted Donations Nan')
-        print(boosted_donations.isna().sum())
         boosted_donations = boosted_donations.fillna(0)
 
         # Set the Boost Coefficient
@@ -178,13 +176,11 @@ class TunableQuadraticFunding(pm.Parameterized):
         on_init=True,
     )
     def update_boosted_qf(self):
-        print('Update Boosted QF')
         boosted_qf = self._qf(
             self.boosted_donations,
             donation_column='Boosted Amount',
             mechanism=self.mechanism,
         )
-        print(boosted_qf['Total Funding'])
         self.boosted_qf = boosted_qf
 
     def donation_profile_clustermatch(self, donation_df, donation_column='amountUSD'):
@@ -214,8 +210,12 @@ class TunableQuadraticFunding(pm.Parameterized):
 
     @pm.depends('boost_factor', watch=True, on_init=True)
     def project_stats(self, donation_column='Boosted Amount'):
-        boosted_donations = self.boosted_donations
+        donations = self.donations.dataset
         projects = self.donations_dashboard.projects_table(
+            donations_df=donations, donation_column='amountUSD'
+        )
+        boosted_donations = self.boosted_donations
+        boosted_projects = self.donations_dashboard.projects_table(
             donations_df=boosted_donations, donation_column=donation_column
         )
         sme_donations = boosted_donations[boosted_donations['address'] != 0]
@@ -246,8 +246,12 @@ class TunableQuadraticFunding(pm.Parameterized):
         )
 
         projects = projects.merge(
-            sme_stats, how='outer', left_on='Grant Name', right_index=True
-        )
+            boosted_projects,
+            how='inner',
+            left_on='Grant Name',
+            right_on='Grant Name',
+            suffixes=(' Not Boosted', ' Boosted'),
+        ).merge(sme_stats, how='outer', left_on='Grant Name', right_index=True)
         return projects
 
     @pm.depends('donations.dataset')
@@ -286,29 +290,36 @@ class TunableQuadraticFunding(pm.Parameterized):
 
     @pm.depends('qf', 'boosted_qf', watch=True, on_init=True)
     def update_results(self):
-        results = (
-            self.project_stats()
-            .drop(
-                ['Max Donor', 'Donations', 'SMEs', 'SME Donations', 'Max SME Donor'],
-                axis=1,
-            )
-            .merge(
-                pd.merge(
-                    self.qf,
-                    self.boosted_qf,
-                    on=['Grant Name', 'grantAddress'],
-                    suffixes=('', ' Boosted'),
-                ),
-                on=['Grant Name'],
-            )
+        stats = self.project_stats().reset_index()
+        qf_results = pd.merge(
+            self.qf,
+            self.boosted_qf,
+            on=['Grant Name', 'grantAddress'],
+            suffixes=(' Not Boosted', ' Boosted'),
+        )
+        results = stats.drop(
+            [
+                'Max Donor Not Boosted',
+                'Donations Not Boosted',
+                'Max Donor Boosted',
+                'Donations Boosted',
+                'SMEs',
+                'SME Donations',
+                'Max SME Donor',
+            ],
+            axis=1,
+        ).merge(
+            qf_results,
+            left_on='Grant Name',
+            right_on='Grant Name',
         )
         results['Matching Funds Boost Percentage'] = 100 * (
-            (results['Matching Funds Boosted'] - results['Matching Funds'])
-            / results['Matching Funds']
+            (results['Matching Funds Boosted'] - results['Matching Funds Not Boosted'])
+            / results['Matching Funds Not Boosted']
         ).round(4)
         results['Total Funding Boost Percentage'] = 100 * (
-            (results['Total Funding Boosted'] - results['Total Funding'])
-            / results['Total Funding']
+            (results['Total Funding Boosted'] - results['Total Funding Not Boosted'])
+            / results['Total Funding Not Boosted']
         ).round(4)
 
         self.results = results

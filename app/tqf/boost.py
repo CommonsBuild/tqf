@@ -78,13 +78,7 @@ class Boost(pm.Parameterized):
         x : ...
         """
 
-        print('Linear SCALE')
         linear = pd.Series((x - t + 1) / (x.max() - t + 1))
-
-        print(linear.min())
-        print(linear.max())
-        print(linear.mean())
-
         return linear
 
     @staticmethod
