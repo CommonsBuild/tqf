@@ -28,10 +28,7 @@ class TunableQuadraticFunding(pm.Parameterized):
             'Cluster Mapping',
         ],
     )
-
-    @pm.depends('donations_dashboard', watch=True, on_init=True)
-    def update_donations(self):
-        self.donations = self.donations_dashboard.donations
+    project_stats = pm.DataFrame(precedence=-1)
 
     def _qf(
         self,
@@ -102,7 +99,7 @@ class TunableQuadraticFunding(pm.Parameterized):
         return qf
 
     @pm.depends(
-        'donations.param',
+        'donations_dashboard.donations.param',
         'matching_pool',
         'matching_percentage_cap',
         'mechanism',
@@ -110,7 +107,9 @@ class TunableQuadraticFunding(pm.Parameterized):
         on_init=True,
     )
     def update_qf(self):
-        self.qf = self._qf(self.donations.dataset, mechanism=self.mechanism)
+        self.qf = self._qf(
+            self.donations_dashboard.donations.dataset, mechanism=self.mechanism
+        )
 
     def view_qf_bar(self):
         return self.qf['quadratic_funding'].hvplot.bar(
@@ -134,14 +133,14 @@ class TunableQuadraticFunding(pm.Parameterized):
     @pm.depends(
         'boosts',
         'boost_factor',
-        'donations.dataset',
+        'donations_dashboard.donations.dataset',
         watch=True,
         on_init=True,
     )
     def update_boosted_donations(self):
         # Merge Boosts into Donations
         boosted_donations = (
-            self.donations.dataset.merge(
+            self.donations_dashboard.donations.dataset.merge(
                 self.boosts,
                 how='left',
                 left_on='voter',
@@ -173,7 +172,6 @@ class TunableQuadraticFunding(pm.Parameterized):
         'matching_percentage_cap',
         'mechanism',
         watch=True,
-        on_init=True,
     )
     def update_boosted_qf(self):
         boosted_qf = self._qf(
@@ -208,38 +206,37 @@ class TunableQuadraticFunding(pm.Parameterized):
 
         return funding
 
-    @pm.depends('boost_factor', watch=True, on_init=True)
-    def project_stats(self, donation_column='Boosted Amount'):
-        donations = self.donations.dataset
+    @pm.depends('boosted_donations', watch=True, on_init=True)
+    def update_project_stats(self):
         projects = self.donations_dashboard.projects_table(
-            donations_df=donations, donation_column='amountUSD'
+            donations_df=self.donations_dashboard.donations.dataset,
+            donation_column='amountUSD',
         )
-        boosted_donations = self.boosted_donations
         boosted_projects = self.donations_dashboard.projects_table(
-            donations_df=boosted_donations, donation_column=donation_column
+            donations_df=self.boosted_donations, donation_column='Boosted Amount'
         )
-        sme_donations = boosted_donations[boosted_donations['address'] != 0]
+        sme_donations = self.boosted_donations[self.boosted_donations['address'] != 0]
         total_smes = sme_donations['address'].nunique()
-        total_sme_donations = sme_donations[donation_column].sum()
+        total_sme_donations = sme_donations['Boosted Amount'].sum()
         sme_stats = sme_donations.groupby('Grant Name').apply(
             lambda group: pd.Series(
                 {
                     'Number of SMEs': group['address'].nunique(),
                     'Percentage of SMEs': group['address'].nunique() / total_smes,
-                    'Total SME Donations': group[donation_column].sum(),
-                    'Percent of Total SME Donations': group[donation_column].sum()
+                    'Total SME Donations': group['Boosted Amount'].sum(),
+                    'Percent of Total SME Donations': group['Boosted Amount'].sum()
                     / total_sme_donations,
-                    'Mean SME Donation': group[donation_column].mean(),
-                    'Median SME Donation': group[donation_column].median(),
-                    'Max SME Donations': group[donation_column].max(),
+                    'Mean SME Donation': group['Boosted Amount'].mean(),
+                    'Median SME Donation': group['Boosted Amount'].median(),
+                    'Max SME Donations': group['Boosted Amount'].max(),
                     'Max SME Donor': group.loc[
-                        group[donation_column].idxmax(), 'voter'
+                        group['Boosted Amount'].idxmax(), 'voter'
                     ],
                     'SMEs': [
                         a[:8] for a in sorted(group['address'].tolist(), reverse=True)
                     ],
                     'SME Donations': sorted(
-                        group[donation_column].tolist(), reverse=True
+                        group['Boosted Amount'].tolist(), reverse=True
                     ),
                 }
             )
@@ -252,7 +249,7 @@ class TunableQuadraticFunding(pm.Parameterized):
             right_on='Grant Name',
             suffixes=(' Not Boosted', ' Boosted'),
         ).merge(sme_stats, how='outer', left_on='Grant Name', right_index=True)
-        return projects
+        self.project_stats = projects
 
     @pm.depends('donations.dataset')
     def projects_table(self, donations_df, donation_column='amountUSD'):
@@ -288,42 +285,52 @@ class TunableQuadraticFunding(pm.Parameterized):
 
         return projects
 
-    @pm.depends('qf', 'boosted_qf', watch=True, on_init=True)
+    @pm.depends('qf', 'boosted_qf', watch=True)
     def update_results(self):
-        stats = self.project_stats().reset_index()
-        qf_results = pd.merge(
-            self.qf,
-            self.boosted_qf,
-            on=['Grant Name', 'grantAddress'],
-            suffixes=(' Not Boosted', ' Boosted'),
-        )
-        results = stats.drop(
-            [
-                'Max Donor Not Boosted',
-                'Donations Not Boosted',
-                'Max Donor Boosted',
-                'Donations Boosted',
-                'SMEs',
-                'SME Donations',
-                'Max SME Donor',
-            ],
-            axis=1,
-        ).merge(
-            qf_results,
-            left_on='Grant Name',
-            right_on='Grant Name',
-        )
-        results['Matching Funds Boost Percentage'] = 100 * (
-            (results['Matching Funds Boosted'] - results['Matching Funds Not Boosted'])
-            / results['Matching Funds Not Boosted']
-        ).round(4)
-        results['Total Funding Boost Percentage'] = 100 * (
-            (results['Total Funding Boosted'] - results['Total Funding Not Boosted'])
-            / results['Total Funding Not Boosted']
-        ).round(4)
+        if (
+            self.project_stats is not None
+            and self.qf is not None
+            and self.boosted_qf is not None
+        ):
+            stats = self.project_stats.reset_index()
+            qf_results = pd.merge(
+                self.qf,
+                self.boosted_qf,
+                on=['Grant Name', 'grantAddress'],
+                suffixes=(' Not Boosted', ' Boosted'),
+            )
+            results = stats.drop(
+                [
+                    'Max Donor Not Boosted',
+                    'Donations Not Boosted',
+                    'Max Donor Boosted',
+                    'Donations Boosted',
+                    'SMEs',
+                    'SME Donations',
+                    'Max SME Donor',
+                ],
+                axis=1,
+            ).merge(
+                qf_results,
+                left_on='Grant Name',
+                right_on='Grant Name',
+            )
+            results['Matching Funds Boost Percentage'] = 100 * (
+                (
+                    results['Matching Funds Boosted']
+                    - results['Matching Funds Not Boosted']
+                )
+                / results['Matching Funds Not Boosted']
+            ).round(4)
+            results['Total Funding Boost Percentage'] = 100 * (
+                (
+                    results['Total Funding Boosted']
+                    - results['Total Funding Not Boosted']
+                )
+                / results['Total Funding Not Boosted']
+            ).round(4)
 
-        self.results = results
-        return
+            self.results = results
 
     def get_results_csv(self):
         output = BytesIO()
@@ -334,9 +341,9 @@ class TunableQuadraticFunding(pm.Parameterized):
     def get_boosted_donations_csv(self):
         output = BytesIO()
         boosted_donations = self.boosted_donations
-        boosted_donations[self.donations.dataset.columns].reset_index().to_csv(
-            output, index=False
-        )
+        boosted_donations[
+            self.donations_dashboard.donations.dataset.columns
+        ].reset_index().to_csv(output, index=False)
         output.seek(0)
         return output
 

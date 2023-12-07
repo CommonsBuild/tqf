@@ -1,10 +1,12 @@
+import functools
+
 import datashader as ds
 import holoviews as hv
 import numpy as np
 import pandas as pd
 import panel as pn
 import param as pm
-from bokeh.models import BasicTicker, LogTicker, NumeralTickFormatter
+from bokeh.models import BasicTicker, HoverTool, LogTicker, NumeralTickFormatter
 from holoviews.operation.datashader import datashade, dynspread, shade
 
 pn.extension('mathjax')
@@ -13,8 +15,8 @@ pn.extension('mathjax')
 class Boost(pm.Parameterized):
     distribution = pm.Selector(
         doc='The input token distribution.',
-        instantiate=True,
-        per_instance=True,
+        # instantiate=True,
+        # per_instance=True,
     )
     threshold = pm.Integer(
         default=1,
@@ -22,8 +24,8 @@ class Boost(pm.Parameterized):
         bounds=(1, 1000),
         step=1,
         doc='Minimum number of tokens required to qualify for this boost.',
-        instantiate=True,
-        per_instance=True,
+        # instantiate=True,
+        # per_instance=True,
     )
     transformation = pm.Selector(
         default='Sigmoid',
@@ -56,7 +58,7 @@ class Boost(pm.Parameterized):
     max_boost = pm.Number(
         2, bounds=(1, 10), step=0.1, doc='Scaling factor for this boost.'
     )
-    boost = pm.Series(precedence=-1, doc='The resulting boost coefficient.')
+    boost = pm.DataFrame(precedence=-1, doc='The resulting boost coefficient.')
 
     @staticmethod
     def _threshold(x, t):
@@ -177,41 +179,45 @@ class Boost(pm.Parameterized):
     )
     def update_boost(self):
         # This keeps the update efficient, ensuring that events are all triggered at once.
-        with pm.parameterized.batch_call_watchers(self):
+        transformations = {
+            'Threshold': self.threshold_boost,
+            'Linear': self.linear_boost,
+            'LogLinear': self.log_linear_boost,
+            'Normal': self.normal_boost,
+            'LogNormal': self.log_normal_boost,
+            'Sigmoid': self.sigmoid_boost,
+        }
 
-            transformations = {
-                'Threshold': self.threshold_boost,
-                'Linear': self.linear_boost,
-                'LogLinear': self.log_linear_boost,
-                'Normal': self.normal_boost,
-                'LogNormal': self.log_normal_boost,
-                'Sigmoid': self.sigmoid_boost,
+        # Loads the selected transformation.
+        transformation_function = transformations[self.transformation]
+
+        self.boost = pd.DataFrame(
+            {
+                'address': self.distribution.dataset['address'],
+                'boost': (1 + (self.max_boost - 1) * transformation_function())
+                * self.threshold_boost(),
             }
-
-            # Loads the selected transformation.
-            transformation_function = transformations[self.transformation]
-
-            self.boost = (
-                1 + (self.max_boost - 1) * transformation_function()
-            ) * self.threshold_boost()
-
-            self.distribution.dataset['boost'] = self.boost
+        )
 
     @pm.depends('boost')
     def view_boost(self):
+
+        hover = HoverTool(
+            tooltips=[('token holder index', '$x{0,0}'), ('boost', '$y{0.0}')]
+        )
         boost_view = (
-            self.boost.sort_values(ascending=False)
+            self.boost.sort_values(by='boost', ascending=False)
             .reset_index(drop=True)
             .hvplot.area(
                 ylim=(0, self.max_boost),
-                title='Boost',
+                title=self.name,
                 ylabel='boost',
                 height=400,
                 width=1600,
-                # responsive=True,
                 shared_axes=False,
                 yformatter=NumeralTickFormatter(format='0.00'),
                 xlabel='token_holders',
+                tools=[hover],
             )
         )
         return boost_view

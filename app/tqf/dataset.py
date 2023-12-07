@@ -11,7 +11,7 @@ pn.extension('tabulator')
 class Dataset(pm.Parameterized):
     file = pm.FileSelector(
         default=None,
-        path='./app/input/*.csv',
+        path='app/input/*.csv',
     )
     dataset = pm.DataFrame(
         default=None,
@@ -50,13 +50,13 @@ class Dataset(pm.Parameterized):
 
 class Donations(Dataset):
     file = pm.FileSelector(
-        default='./app/input/vote_coefficients_input.csv',
-        path='./app/input/*.csv',
+        default='app/input/vote_coefficients_input.csv',
+        path='app/input/*.csv',
         constant=True,
     )
     grant_names_dataset = pm.Selector(
-        default='./app/input/tegr1_grants.csv',
-        objects=['./app/input/tegr1_grants.csv', './app/input/tegr2_grants.csv'],
+        default='app/input/tegr1_grants.csv',
+        objects=['app/input/tegr1_grants.csv', 'app/input/tegr2_grants.csv'],
         constant=True,
     )
     dataset = pm.DataFrame(
@@ -85,7 +85,7 @@ class Donations(Dataset):
 class TokenDistribution(Dataset):
     file = pm.FileSelector(
         default=None,
-        path='./app/input/*.csv',
+        path='app/input/*.csv',
         constant=True,
     )
     dataset = pm.DataFrame(
@@ -133,16 +133,16 @@ class TokenDistribution(Dataset):
 
 class TEGR1_TEC(TokenDistribution):
     file = pm.FileSelector(
-        default='./app/input/tec_holders.csv',
-        path='./app/input/*.csv',
+        default='app/input/tec_holders.csv',
+        path='app/input/*.csv',
         constant=True,
     )
 
 
 class TEGR1_TEA(TokenDistribution):
     file = pm.FileSelector(
-        default='./app/input/tea_holders_dune.csv',
-        path='./app/input/*.csv',
+        default='app/input/tea_holders_dune.csv',
+        path='app/input/*.csv',
         constant=True,
     )
 
@@ -159,16 +159,16 @@ class TEGR1_TEA(TokenDistribution):
 
 class TEGR2_TEC(TokenDistribution):
     file = pm.FileSelector(
-        default='./app/input/tec_holders_tegr2.csv',
-        path='./app/input/*.csv',
+        default='app/input/tec_holders_tegr2.csv',
+        path='app/input/*.csv',
         constant=True,
     )
 
 
 class TEGR2_TEA(TokenDistribution):
     file = pm.FileSelector(
-        default='./app/input/tea_holders_teg2.csv',
-        path='./app/input/*.csv',
+        default='app/input/tea_holders_teg2.csv',
+        path='app/input/*.csv',
         constant=True,
     )
 

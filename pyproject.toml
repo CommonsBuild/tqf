@@ -26,6 +26,10 @@ networkx = "^3.1"
 xarray = "^2023.8.0"
 datashader = "^0.15.2"
 mathjax = "^0.1.2"
+diskcache = "^5.6.3"
+pyinstrument = "^4.6.1"
+snakeviz = "^2.2.0"
+memray = "^1.11.0"
 
 
 [build-system]

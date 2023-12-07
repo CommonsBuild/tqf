@@ -41,7 +41,7 @@ class Outcomes(pm.Parameterized):
         boosts = []
         for i, boost in enumerate(self.boost_factory.boosts):
             boost_data = (
-                collected_boosts[collected_boosts[f'balance_{i}'] > 0]
+                collected_boosts[collected_boosts[f'boost_{i}'] > 0]
                 .merge(contributors, how='inner', left_on='address', right_on='voter')
                 .drop('address', axis=1)
                 .set_index('voter')

@@ -21,7 +21,10 @@ def pn_exception_handler(ex):
 
 
 pn.extension(
-    'tabulator', 'mathjax', exception_handler=pn_exception_handler, notifications=True
+    'tabulator',
+    'mathjax',
+    exception_handler=pn_exception_handler,
+    notifications=True,
 )
 pn.state.notifications.position = 'top-right'
 
