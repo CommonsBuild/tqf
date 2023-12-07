@@ -202,9 +202,7 @@ class Boost(pm.Parameterized):
     @pm.depends('boost')
     def view_boost(self):
 
-        hover = HoverTool(
-            tooltips=[('token holder index', '$x{0,0}'), ('boost', '$y{0.0}')]
-        )
+        hover = HoverTool(tooltips=[('token holder index', '$x{0,0}')])
         boost_view = (
             self.boost.sort_values(by='boost', ascending=False)
             .reset_index(drop=True)

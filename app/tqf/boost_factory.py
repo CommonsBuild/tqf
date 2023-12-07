@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import panel as pn
 import param as pm
+from bokeh.models import HoverTool
 
 hv.opts.defaults(
     hv.opts.Curve(axiswise=True, framewise=True, shared_axes=False),
@@ -139,6 +140,8 @@ class BoostFactory(pm.Parameterized):
             y = 'product'
             alpha = 1
 
+        hover = HoverTool(tooltips=[('token holder index', '$x{0,0}')])
+
         boosts_view = boosts.reset_index(drop=True).hvplot.area(
             x='index',
             y=y,
@@ -147,17 +150,16 @@ class BoostFactory(pm.Parameterized):
             responsive=True,
             shared_axes=False,
             alpha=alpha,
+            tools=[hover],
         )
         return boosts_view
 
     def view_boosts_list_param(self):
         return pn.panel(self.param['boosts'], expand_button=False)
 
-    # @pn.depends('boost_outputs')
     def view_boosts(self):
         return pn.Column(*[boost.view() for boost in self.boosts])
 
-    # @pn.depends('boost_outputs')
     def view(self):
         view = pn.Column(
             self.view_boosts_list_param(),
