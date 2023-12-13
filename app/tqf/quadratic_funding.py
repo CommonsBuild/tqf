@@ -8,10 +8,9 @@ import param as pm
 
 class TunableQuadraticFunding(pm.Parameterized):
 
-    donations_dashboard = pm.Selector(doc='Donations Dataset')
-    boost_factory = pm.Selector()
+    donations_dashboard = pm.Selector(doc='Donations Dataset', precedence=-1)
+    boost_factory = pm.Selector(precedence=-1)
     boosts = pm.DataFrame(precedence=-1)
-    boost_factor = pm.Number(2, bounds=(0, 10), step=0.1)
     matching_pool = pm.Integer(25000, bounds=(0, 250_000), step=5_000)
     matching_percentage_cap = pm.Number(0.2, step=0.01, bounds=(0.01, 1))
     qf = pm.DataFrame(precedence=-1)
@@ -111,19 +110,34 @@ class TunableQuadraticFunding(pm.Parameterized):
             self.donations_dashboard.donations.dataset, mechanism=self.mechanism
         )
 
-    def view_qf_bar(self):
-        return self.qf['quadratic_funding'].hvplot.bar(
-            title='Quadratic Funding', shared_axes=False
-        )
-
-    def view_qf_distribution_bar(self):
-        return self.qf['distribution'].hvplot.bar(
-            title='Quadratic Funding Distribution', shared_axes=False
-        )
+    # def view_qf_bar(self):
+    #     return self.results['quadratic_funding'].hvplot.bar(
+    #         title='Quadratic Funding', shared_axes=False
+    #     )
+    #
+    # def view_qf_distribution_bar(self):
+    #     return self.results['distribution'].hvplot.bar(
+    #         title='Quadratic Funding Distribution', shared_axes=False
+    #     )
 
     def view_qf_matching_bar(self):
-        return self.qf['matching'].hvplot.bar(
-            title='Quadratic Funding Distribution', shared_axes=False
+        def truncate_string(s, max_length=30):
+            return s if len(s) <= max_length else s[: max_length - 3] + '...'
+
+        results = self.results.sort_values('Matching Funds Boosted', ascending=False)
+        results['Grant Name'] = results['Grant Name'].apply(truncate_string)
+        return results.sort_values(
+            'Matching Funds Boosted', ascending=False
+        ).hvplot.bar(
+            title='Matching Funds Boosted',
+            y='Matching Funds Boosted',
+            x='Grant Name',
+            color='Matching Funds Boosted',
+            shared_axes=False,
+            height=400,
+            width=1600,
+            cmap='RdYlGn',
+            rot=90,
         )
 
     @pm.depends('boost_factory.param', watch=True, on_init=True)
@@ -132,7 +146,6 @@ class TunableQuadraticFunding(pm.Parameterized):
 
     @pm.depends(
         'boosts',
-        'boost_factor',
         'donations_dashboard.donations.dataset',
         watch=True,
         on_init=True,
@@ -154,9 +167,7 @@ class TunableQuadraticFunding(pm.Parameterized):
         boosted_donations = boosted_donations.fillna(0)
 
         # Set the Boost Coefficient
-        boosted_donations['Boost Coefficient'] = (
-            1 + self.boost_factor * boosted_donations['total_boost']
-        )
+        boosted_donations['Boost Coefficient'] = 1 + boosted_donations['total_boost']
 
         # Set the Boosted Amount as a Boost Coefficient * Donation Amount
         boosted_donations['Boosted Amount'] = (
@@ -351,20 +362,25 @@ class TunableQuadraticFunding(pm.Parameterized):
         return self.results
 
     def view_results_bar(self):
-        return self.results.sort_values(
+        def truncate_string(s, max_length=30):
+            return s if len(s) <= max_length else s[: max_length - 3] + '...'
+
+        results = self.results.sort_values(
             'Matching Funds Boost Percentage', ascending=False
-        ).hvplot.bar(
+        )
+        results['Grant Name'] = results['Grant Name'].apply(truncate_string)
+        return results.hvplot.bar(
             title='Matching Funds Boost Percentage',
             x='Grant Name',
             y='Matching Funds Boost Percentage',
             c='Matching Funds Boost Percentage',
-            cmap='BrBG',
+            cmap='RdYlGn',
             ylim=(-100, 100),
             colorbar=False,
-            rot=65,
-            height=1400,
-            width=1200,
-            fontscale=1.5,
+            rot=90,
+            height=400,
+            width=1600,
+            fontscale=1,
             grid=True,
         )
 

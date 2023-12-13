@@ -62,45 +62,65 @@ tegr2_qf = TunableQuadraticFunding(
 #     tqf=tegr2_qf,
 # )
 
-donations_tab = pn.param.ParamFunction(
-    lambda: pn.Column(tegr2_donations.view, tegr2_donations_dashboard.view),
-    lazy=True,
-    name='Donations',
-)
-tec_token_boost_tab = pn.param.ParamMethod(
-    tegr2_tec_boost.view, lazy=True, name='TEC Token Boost'
-)
-tea_token_boost_tab = pn.param.ParamMethod(
-    tegr2_tea_boost.view, lazy=True, name='TEA Token Boost'
-)
-boost_factory_tab = pn.param.ParamMethod(
-    tegr2_boost_factory.view, lazy=True, name='Boost Factory'
-)
-tqf_tab = pn.param.ParamMethod(tegr2_qf.view, lazy=True, name='TQF')
-# outcomes_tab = pn.param.ParamMethod(outcomes.view, lazy=True, name='Outcomes')
-
-tegr2_app = pn.Tabs(
-    donations_tab,
-    tec_token_boost_tab,
-    tea_token_boost_tab,
-    boost_factory_tab,
-    tqf_tab,
-    # outcomes_tab,
-    dynamic=True,
-    active=1,
-)
+# donations_tab = pn.param.ParamFunction(
+#     lambda: pn.Column(tegr2_donations.view, tegr2_donations_dashboard.view),
+#     lazy=True,
+#     name='Donations',
+# )
+# tec_token_boost_tab = pn.param.ParamMethod(
+#     tegr2_tec_boost.view, lazy=True, name='TEC Token Boost'
+# )
+# tea_token_boost_tab = pn.param.ParamMethod(
+#     tegr2_tea_boost.view, lazy=True, name='TEA Token Boost'
+# )
+# boost_factory_tab = pn.param.ParamMethod(
+#     tegr2_boost_factory.view, lazy=True, name='Boost Factory'
+# )
+# tqf_tab = pn.param.ParamMethod(tegr2_qf.view, lazy=True, name='TQF')
+# # outcomes_tab = pn.param.ParamMethod(outcomes.view, lazy=True, name='Outcomes')
+#
+# tegr2_app = pn.Tabs(
+#     donations_tab,
+#     tec_token_boost_tab,
+#     tea_token_boost_tab,
+#     boost_factory_tab,
+#     tqf_tab,
+#     # outcomes_tab,
+#     dynamic=True,
+#     active=1,
+# )
 
 
 # TEGR2 Dashboard
 # tegr2_app = pn.Tabs(
-#     ('Donations', pn.Column(tegr2_donations.view(), tegr2_donations_dashboard.view())),
+#     ('Donations', tegr2_donations_dashboard.view()),
 #     # ('TEC Token', pn.Row(tegr2_tec_distribution.view)),
 #     # ('TEA Token', pn.Row(tegr2_tea_distribution.view)),
 #     ('TEC Token Boost', tegr2_tec_boost.view()),
 #     ('TEA Token Boost', tegr2_tea_boost.view()),
 #     ('Boost Factory', tegr2_boost_factory.view()),
 #     ('Tunable Quadradic Funding', tegr2_qf.view()),
-#     ('Outcomes', outcomes.view()),
-#     active=1,
+#     # ('Outcomes', outcomes.view()),
+#     active=0,
 #     dynamic=True,
 # )
+
+# tegr2_app = pn.Column(tegr2_boost_factory.view(), tegr2_qf.view())
+
+template = pn.template.MaterialTemplate(
+    title='Tunable Quadratic Funding',
+    sidebar=[boost.param for boost in tegr2_boost_factory.boosts]
+    + [tegr2_boost_factory.param]
+    + [tegr2_qf.param],
+)
+
+# template.main += [boost.view_boost for boost in tegr2_boost_factory.boosts]
+# template.main += [tegr2_boost_factory.boost_outputs]
+template.main += [
+    tegr2_boost_factory.view_boost_outputs_chart,
+    # tegr2_qf.view_results_bar,
+    tegr2_qf.view_qf_matching_bar,
+    # tegr2_qf.results,
+]
+
+tegr2_app = template

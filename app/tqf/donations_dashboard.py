@@ -124,6 +124,7 @@ class DonationsDashboard(pm.Parameterized):
         projects_view = pn.widgets.Tabulator(
             projects,
             formatters={'Donations': {'type': 'textarea', 'textAlign': 'left'}},
+            pagination=None,
         )
         projects_view.style.applymap(color_based_on_eth_address, subset='Max Donor')
         return projects_view
@@ -192,6 +193,7 @@ class DonationsDashboard(pm.Parameterized):
             contributions_matrix,
             widths={col: 120 for col in numeric_columns},
             aggregators={col: 'sum' for col in numeric_columns},
+            pagination=None,
         )
         contributions_matrix_view.style.applymap(
             color_based_on_eth_address,
@@ -676,11 +678,11 @@ class DonationsDashboard(pm.Parameterized):
             pn.Tabs(
                 ('Projects', self.projects_view),
                 ('Contributors', self.contributors_view),
-                ('Contributions Network', self.contributions_network_view),
+                # ('Contributions Network', self.contributions_network_view),
                 ('Contributions Matrix', self.contributions_matrix_view),
                 # ('Donor Donation Counts', self.donor_view),
                 # ('Sankey', self.sankey_view),
-                active=2,
+                active=0,
                 dynamic=True,
             ),
         )

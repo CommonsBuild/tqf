@@ -209,13 +209,21 @@ class Boost(pm.Parameterized):
             .hvplot.area(
                 ylim=(0, self.max_boost),
                 title=self.name,
-                ylabel='boost',
-                height=400,
+                ylabel='Boost',
+                height=200,
                 width=1600,
                 shared_axes=False,
                 yformatter=NumeralTickFormatter(format='0.00'),
-                xlabel='token_holders',
+                xlabel=f'{self.name} by Token Holder',
                 tools=[hover],
+            )
+            .opts(
+                default_tools=[
+                    'pan',
+                    'box_zoom',
+                    'save',
+                    'reset',
+                ]
             )
         )
         return boost_view
