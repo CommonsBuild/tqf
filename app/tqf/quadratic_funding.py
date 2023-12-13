@@ -139,16 +139,16 @@ class TunableQuadraticFunding(pm.Parameterized):
     )
     def update_boosted_donations(self):
         # Merge Boosts into Donations
-        boosted_donations = (
-            self.donations_dashboard.donations.dataset.merge(
-                self.boosts,
-                how='left',
-                left_on='voter',
-                right_on='address',
-            )
-            .rename({'projectId_x': 'projectId'}, axis=1)
-            .drop('projectId_y', axis=1)
+        boosted_donations = self.donations_dashboard.donations.dataset.merge(
+            self.boosts,
+            how='left',
+            left_on='voter',
+            right_on='address',
         )
+        if set(['projectId_x', 'projectId_y']).issubset(boosted_donations.columns):
+            boosted_donations = boosted_donations.rename(
+                {'projectId_x': 'projectId'}, axis=1
+            ).drop('projectId_y', axis=1)
 
         # Non-boosted donations are initially set to 0
         boosted_donations = boosted_donations.fillna(0)

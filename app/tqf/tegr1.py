@@ -13,7 +13,7 @@ pn.extension('tabulator')
 
 # TEGR1 Donations
 tegr1_donations = Donations(
-    name='TEGR1 Donations', file='app/input/vote_coefficients_input.csv'
+    name='TEGR1 Donations', file='app/input/tegr1_vote_coefficients_input.csv'
 )
 
 # TEGR1 Donations Dashboard
@@ -58,36 +58,6 @@ outcomes = Outcomes(
     boost_factory=tegr1_boost_factory,
     tqf=tegr1_qf,
 )
-
-# donations_tab = pn.param.ParamFunction(
-#     lambda: pn.Column(tegr1_donations.view, tegr1_donations_dashboard.view),
-#     lazy=True,
-#     name='Donations',
-# )
-# tec_token_boost_tab = pn.param.ParamFunction(
-#     lambda: tegr1_tec_boost.view(), lazy=True, name='TEC Token Boost'
-# )
-# tea_token_boost_tab = pn.param.ParamFunction(
-#     lambda: tegr1_tea_boost.view(), lazy=True, name='TEA Token Boost'
-# )
-# boost_factory_tab = pn.param.ParamFunction(
-#     lambda: tegr1_boost_factory.view(), lazy=True, name='Boost Factory'
-# )
-# tqf_tab = pn.param.ParamFunction(lambda: tegr1_qf.view(), lazy=True, name='TQF')
-# outcomes_tab = pn.param.ParamFunction(
-#     lambda: outcomes.view(), lazy=True, name='Outcomes'
-# )
-#
-# tegr1_app = pn.Tabs(
-#     donations_tab,
-#     tec_token_boost_tab,
-#     tea_token_boost_tab,
-#     boost_factory_tab,
-#     tqf_tab,
-#     outcomes_tab,
-#     dynamic=True,
-#     active=1,
-# )
 
 # TEGR1 Dashboard
 tegr1_app = pn.Tabs(

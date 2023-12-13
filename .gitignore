@@ -161,3 +161,5 @@ cython_debug/
 
 tags*
 research/mydatabase.db
+**/*~lock*
+cache/

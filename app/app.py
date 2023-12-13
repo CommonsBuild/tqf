@@ -6,8 +6,11 @@ import param as pm
 from icecream import ic
 from tqf.tegr1 import tegr1_app
 
-# from tqf.tegr2 import tegr2_app
+# from tqf.tegr3 import tegr3_app
 from tqf.tqf_math import QuadraticFunding as TQFMath
+
+# from tqf.tegr2 import tegr2_app
+
 
 tqf_math = TQFMath()
 
@@ -52,6 +55,7 @@ class App(pm.Parameterized):
                 pn.Tabs(
                     ('TEGR1', tegr1_app),
                     # ('TEGR2', tegr2_app),
+                    # ('TEGR3', tegr3_app),
                     active=0,
                     dynamic=True,
                 ),

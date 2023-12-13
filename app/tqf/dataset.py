@@ -50,7 +50,7 @@ class Dataset(pm.Parameterized):
 
 class Donations(Dataset):
     file = pm.FileSelector(
-        default='app/input/vote_coefficients_input.csv',
+        # default='app/input/tegr1_vote_coefficients_input.csv',
         path='app/input/*.csv',
         constant=True,
     )
@@ -133,7 +133,7 @@ class TokenDistribution(Dataset):
 
 class TEGR1_TEC(TokenDistribution):
     file = pm.FileSelector(
-        default='app/input/tec_holders.csv',
+        default='app/input/tegr1_tec_holders.csv',
         path='app/input/*.csv',
         constant=True,
     )
@@ -141,7 +141,7 @@ class TEGR1_TEC(TokenDistribution):
 
 class TEGR1_TEA(TokenDistribution):
     file = pm.FileSelector(
-        default='app/input/tea_holders_dune.csv',
+        default='app/input/tegr1_tea_holders_dune.csv',
         path='app/input/*.csv',
         constant=True,
     )
@@ -159,7 +159,7 @@ class TEGR1_TEA(TokenDistribution):
 
 class TEGR2_TEC(TokenDistribution):
     file = pm.FileSelector(
-        default='app/input/tec_holders_tegr2.csv',
+        default='app/input/tegr2_tec_holders.csv',
         path='app/input/*.csv',
         constant=True,
     )
@@ -167,7 +167,7 @@ class TEGR2_TEC(TokenDistribution):
 
 class TEGR2_TEA(TokenDistribution):
     file = pm.FileSelector(
-        default='app/input/tea_holders_teg2.csv',
+        default='app/input/tegr2_tea_holders.csv',
         path='app/input/*.csv',
         constant=True,
     )
@@ -180,3 +180,11 @@ class TEGR2_TEA(TokenDistribution):
         df = pd.read_csv(self.file)
         df.rename({'wallet': 'address'}, axis=1, inplace=True)
         self.dataset = df.sort_values('balance', ascending=False).reset_index(drop=True)
+
+
+class TEGR3_TEC(TEGR2_TEC):
+    pass
+
+
+class TEGR3_TEA(TEGR2_TEA):
+    pass
