@@ -139,13 +139,13 @@ class BoostFactory(pm.Parameterized):
             y = boost_names
             alpha = 1
             max_y = boosts[y].max().max()
-            legend_position = 'bottom_right'
+            legend_position = 'top_right'
         elif self.combine_method == 'sum':
             stacked = True
             y = boost_names
             alpha = 1
             max_y = boosts[y].sum(axis=1).max()
-            legend_position = 'bottom_right'
+            legend_position = 'top_right'
         elif self.combine_method == 'product':
             stacked = True
             boosts['harmonic_mean'] = boosts['product'] / boosts[boost_names].sum(
@@ -158,12 +158,14 @@ class BoostFactory(pm.Parameterized):
             y = boost_names
             alpha = 1
             max_y = boosts[y].sum(axis=1).max()
-            legend_position = 'bottom_right'
+            legend_position = 'top_right'
 
         boosts[boost_names] = boosts[boost_names] * self.boost_factor
         max_y = max_y * self.boost_factor
 
-        hover = HoverTool(tooltips=[('token holder index', '$x{0,0}')])
+        hover = HoverTool(
+            tooltips=[('token holder index', '$x{0,0}'), ('boost', '$y{0,0.0}')]
+        )
         boosts_view = (
             boosts.reset_index(drop=True)
             .hvplot.area(

@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import panel as pn
 import param as pm
+from bokeh.models import HoverTool
 
 
 class TunableQuadraticFunding(pm.Parameterized):
@@ -121,24 +122,51 @@ class TunableQuadraticFunding(pm.Parameterized):
     #     )
 
     def view_qf_matching_bar(self):
-        def truncate_string(s, max_length=30):
+        def truncate_string(s, max_length=40):
             return s if len(s) <= max_length else s[: max_length - 3] + '...'
 
         results = self.results.sort_values('Matching Funds Boosted', ascending=False)
         results['Grant Name'] = results['Grant Name'].apply(truncate_string)
-        return results.sort_values(
-            'Matching Funds Boosted', ascending=False
-        ).hvplot.bar(
+        results = results.sort_values('Matching Funds Boosted', ascending=False).rename(
+            columns={
+                'Matching Funds Boosted': 'matching_funds',
+                'Grant Name': 'grant_name',
+            }
+        )
+
+        hover = HoverTool(
+            tooltips=[
+                ('Grant Name', '@grant_name'),
+                ('Matching Funds Boosted', '$@matching_funds{0,0}'),
+            ]
+        )
+
+        chart = results.hvplot.bar(
             title='Matching Funds Boosted',
-            y='Matching Funds Boosted',
-            x='Grant Name',
-            color='Matching Funds Boosted',
+            y='matching_funds',
+            x='grant_name',
+            color='matching_funds',
             shared_axes=False,
-            height=400,
+            height=800,
             width=1600,
             cmap='RdYlGn',
             rot=90,
+            ylabel='Matching Funds Boosted',
+            xlabel='Grant Name',
+            tools=[hover],
         )
+
+        chart2 = results.hvplot.bar(
+            x='grant_name',
+            y='Matching Funds Not Boosted',
+            color='gray',
+            xlabel=None,
+            ylabel=None,
+            line_width=2,
+            fill_alpha=0.2,
+        )
+
+        return chart * chart2
 
     @pm.depends('boost_factory.param', watch=True, on_init=True)
     def update_boosts(self):

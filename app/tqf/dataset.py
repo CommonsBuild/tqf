@@ -54,9 +54,9 @@ class Donations(Dataset):
         path='app/input/*.csv',
         constant=True,
     )
-    grant_names_dataset = pm.Selector(
-        default='app/input/tegr1_grants.csv',
-        objects=['app/input/tegr1_grants.csv', 'app/input/tegr2_grants.csv'],
+    grant_names_dataset = pm.FileSelector(
+        # default='app/input/tegr1_grants.csv',
+        path='app/input/*grants.csv',
         constant=True,
     )
     dataset = pm.DataFrame(
@@ -183,8 +183,25 @@ class TEGR2_TEA(TokenDistribution):
 
 
 class TEGR3_TEC(TEGR2_TEC):
-    pass
+    file = pm.FileSelector(
+        default='app/input/tegr3_tec_holders.csv',
+        path='app/input/*.csv',
+        constant=True,
+    )
 
 
 class TEGR3_TEA(TEGR2_TEA):
-    pass
+    file = pm.FileSelector(
+        default='app/input/tegr3_tea_holders.csv',
+        path='app/input/*.csv',
+        constant=True,
+    )
+
+    @pm.depends('file', watch=True)
+    def load_file(self):
+        """
+        TEA Data might have 'wallet' field. If it does we remap it to 'address'.
+        """
+        df = pd.read_csv(self.file)
+        df.rename({'wallet': 'address'}, axis=1, inplace=True)
+        self.dataset = df.sort_values('balance', ascending=False).reset_index(drop=True)

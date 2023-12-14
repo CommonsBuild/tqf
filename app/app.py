@@ -4,10 +4,11 @@ import logging
 import panel as pn
 import param as pm
 from icecream import ic
-from tqf.tegr2 import tegr2_app
-
-# from tqf.tegr3 import tegr3_app
+from tqf.tegr3 import tegr3_app
 from tqf.tqf_math import QuadraticFunding as TQFMath
+
+# from tqf.tegr2 import tegr2_app
+
 
 # from tqf.tegr1 import tegr1_app
 
@@ -32,7 +33,7 @@ pn.extension(
     loading_color='#00aa41',
 )
 pn.state.notifications.position = 'top-right'
-
+pn.config.throttled = True
 
 # Use the following to initialize ipython when serving the app:
 # from IPython import start_ipython
@@ -45,7 +46,7 @@ pn.state.notifications.position = 'top-right'
 # ipython_thread = threading.Thread(target=start_ipython_in_thread, args=(globals(),))
 # ipython_thread.start()
 
-tegr2_app.servable()
+tegr3_app.servable()
 
 # template = pn.template.VanillaTemplate(title='Tunable Quadratic Funding')
 #
