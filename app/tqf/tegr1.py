@@ -6,7 +6,8 @@ from .boost import Boost
 from .boost_factory import BoostFactory
 from .dataset import TEGR1_TEA, TEGR1_TEC, Donations
 from .donations_dashboard import DonationsDashboard
-from .outcomes import Outcomes
+
+# from .outcomes import Outcomes
 from .quadratic_funding import TunableQuadraticFunding
 
 pn.extension('tabulator')
@@ -53,11 +54,11 @@ tegr1_qf = TunableQuadraticFunding(
 )
 
 # TEGR1 Outcomes
-outcomes = Outcomes(
-    donations_dashboard=tegr1_donations_dashboard,
-    boost_factory=tegr1_boost_factory,
-    tqf=tegr1_qf,
-)
+# outcomes = Outcomes(
+#     donations_dashboard=tegr1_donations_dashboard,
+#     boost_factory=tegr1_boost_factory,
+#     tqf=tegr1_qf,
+# )
 
 # TEGR1 Dashboard
 tegr1_app = pn.Tabs(
@@ -68,7 +69,7 @@ tegr1_app = pn.Tabs(
     ('TEA Token Boost', tegr1_tea_boost.view()),
     ('Boost Factory', tegr1_boost_factory.view()),
     ('Tunable Quadradic Funding', tegr1_qf.view()),
-    ('Outcomes', outcomes.view()),
+    # ('Outcomes', outcomes.view()),
     active=1,
     dynamic=True,
 )

@@ -82,7 +82,7 @@ template.main += [
         ),
         (
             'Data',
-            tegr3_qf.results,
+            tegr3_qf.view_results,
         ),
     )
 ]

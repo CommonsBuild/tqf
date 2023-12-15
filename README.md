@@ -1,7 +1,7 @@
 # Alloha: Tunable Quadratic Funding
 TQF is a research initiative by the Token Engineering Commons that enables
 transparent and informed quadratic funding round operation with a focus on
-utilizing token signal inputs to add tunable weights to donations based on 
+utilizing token signal inputs to add tunable weights to donations based on
 donor token holdings.
 
 
@@ -21,11 +21,13 @@ donor token holdings.
 ### Background
 
 The Token Engineering Commons has been running community Quadratic Funding on
-the Grants Stack since the Beta round of April 2023. Since the inception of
-the TEGRX rounds, an experimental feature was introduced called subject matter expertise
-signal boosting SMESB. In SMESB donations are increased according to the weight of donors.
-Donor weight is computed as a result of TE academy credentials and $TEC token holdings which
-are meant to indicate expertise in the field of Token Engineering. Read more in this blog post:
+the Grants Stack since the Beta round of April 2023. Since the inception of the
+TEGRX rounds, an experimental feature was introduced called subject matter
+expertise signal boosting SMESB. In SMESB donations weights are boosted
+according to a SME boost level assigned to individual addresses. Donor weights
+are computed as a result of TE academy credentials and $TEC token holdings which
+are meant to indicate expertise in the field of Token Engineering. Read more in
+this blog post:
 
 [Incorporating Expertise into Quadratic Funding.](https://medium.com/token-engineering-commons/expertise-and-quadratic-funding-bd4f0c5c3e23)
 

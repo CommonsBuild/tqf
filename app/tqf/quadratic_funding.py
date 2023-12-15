@@ -387,7 +387,24 @@ class TunableQuadraticFunding(pm.Parameterized):
         return output
 
     def view_results(self):
-        return self.results
+        results = (
+            self.results.rename(
+                {'Total Donations Not Boosted': 'Direct Donations'}, axis=1
+            )[
+                [
+                    'Grant Name',
+                    'Direct Donations',
+                    'Matching Funds Not Boosted',
+                    'Matching Funds Boosted',
+                    'Total Funding Boosted',
+                    'Matching Funds Boost Percentage',
+                ]
+            ]
+            .sort_values('Matching Funds Boosted', ascending=False)
+            .reset_index(drop=True)
+        )
+
+        return results
 
     def view_results_bar(self):
         def truncate_string(s, max_length=30):
