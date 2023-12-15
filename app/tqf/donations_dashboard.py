@@ -126,7 +126,7 @@ class DonationsDashboard(pm.Parameterized):
             formatters={'Donations': {'type': 'textarea', 'textAlign': 'left'}},
             pagination=None,
         )
-        projects_view.style.applymap(color_based_on_eth_address, subset='Max Donor')
+        projects_view.style.map(color_based_on_eth_address, subset='Max Donor')
         return projects_view
 
     def contributor_dataset(self):
@@ -174,7 +174,7 @@ class DonationsDashboard(pm.Parameterized):
             contributors,
             formatters={'donations': {'type': 'textarea', 'textAlign': 'left'}},
         )
-        contributors_view.style.applymap(color_based_on_eth_address, subset='voter')
+        contributors_view.style.map(color_based_on_eth_address, subset='voter')
         return contributors_view
 
     @pm.depends('donations.dataset', watch=True)
@@ -195,7 +195,7 @@ class DonationsDashboard(pm.Parameterized):
             aggregators={col: 'sum' for col in numeric_columns},
             pagination=None,
         )
-        contributions_matrix_view.style.applymap(
+        contributions_matrix_view.style.map(
             color_based_on_eth_address,
             subset='voter',
         )
@@ -222,7 +222,7 @@ class DonationsDashboard(pm.Parameterized):
             return f'background-color: {Greens[color_index]}; color: {text_color};'
 
         for col in numeric_columns:
-            contributions_matrix_view.style.applymap(color_cell, subset=[col])
+            contributions_matrix_view.style.map(color_cell, subset=[col])
 
         return contributions_matrix_view
 
