@@ -4,7 +4,7 @@ from bokeh.models import Button, ColumnDataSource, PointDrawTool
 from bokeh.plotting import curdoc, figure
 
 # Create the plot
-plot = figure(x_range=(0, 10), y_range=(0, 10), title='Drag the points')
+plot = figure(x_range=(-10, 10), y_range=(-10, 10), title='Drag the points')
 # renderer = plot.circle('x', 'y', source=source, size=20, color='green', alpha=0.5)
 initial_data = dict(
     x=[1, 2, 3, 4, 5],
