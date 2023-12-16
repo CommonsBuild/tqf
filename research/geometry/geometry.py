@@ -1,6 +1,7 @@
 import numpy as np
 import panel as pn
-import param
+import param as pm
+from bokeh.models import PointDrawTool
 from bokeh.plotting import figure
 
 pn.extension()
@@ -8,19 +9,30 @@ pn.extension()
 # Shared figure for all shapes
 shared_figure = figure(x_range=(-3, 3), y_range=(-3, 3))
 
+# Add the PointDrawTool to the shared figure for all renderers
+# draw_tool = PointDrawTool()
+# shared_figure.add_tools(draw_tool)
+# shared_figure.toolbar.active_tap = draw_tool
 
-class Point(param.Parameterized):
-    x = param.Number(default=0)
-    y = param.Number(default=0)
+
+class Point(pm.Parameterized):
+    x = pm.Number(default=0)
+    y = pm.Number(default=0)
 
 
-class Shape(param.Parameterized):
-    radius = param.Number(default=1, bounds=(0, 1))
-    center = param.Parameter(default=Point())
+class Shape(pm.Parameterized):
+    radius = pm.Number(default=1, bounds=(0, 1))
+    center = pm.Parameter(default=Point())
 
     def __init__(self, **params):
         self.renderer = shared_figure.line(*self._get_coords())
         super(Shape, self).__init__(**params)
+        # self.add_point_draw_tool()
+
+    # def add_point_draw_tool(self):
+    #     draw_tool = PointDrawTool(renderers=[self.renderer])
+    #     shared_figure.add_tools(draw_tool)
+    #     shared_figure.toolbar.active_tap = draw_tool
 
     def _get_coords(self):
         return [], []
@@ -33,7 +45,7 @@ class Shape(param.Parameterized):
 
 
 class Circle(Shape):
-    n = param.Integer(default=100, precedence=-1)
+    n = pm.Integer(default=100, precedence=-1)
 
     def _get_coords(self):
         angles = np.linspace(0, 2 * np.pi, self.n + 1)
@@ -41,16 +53,16 @@ class Circle(Shape):
         ys = self.radius * np.cos(angles)
         return self.translate_coords(xs, ys)
 
-    @param.depends('radius', 'center.x', 'center.y', watch=True, on_init=True)
+    @pm.depends('radius', 'center.x', 'center.y', watch=True, on_init=True)
     def update(self):
         xs, ys = self._get_coords()
         self.renderer.data_source.data.update({'x': xs, 'y': ys})
 
 
 class NGon(Circle):
-    n = param.Integer(default=3, bounds=(3, 10), precedence=1)
+    n = pm.Integer(default=3, bounds=(3, 10), precedence=1)
 
-    @param.depends('radius', 'n', 'center.x', 'center.y', watch=True, on_init=True)
+    @pm.depends('radius', 'n', 'center.x', 'center.y', watch=True, on_init=True)
     def update(self):
         xs, ys = self._get_coords()
         self.renderer.data_source.data.update({'x': xs, 'y': ys})
@@ -60,14 +72,14 @@ class NGon(Circle):
 shapes = [NGon(center=Point(x=1, y=1)), Circle(center=Point(x=-1, y=-1))]
 
 
-class ShapeViewer(param.Parameterized):
-    shape = param.ObjectSelector(default=shapes[0], objects=shapes)
+class ShapeViewer(pm.Parameterized):
+    shape = pm.ObjectSelector(default=shapes[0], objects=shapes)
 
-    @param.depends('shape')
+    @pm.depends('shape')
     def view(self):
         return self.shape.view()
 
-    @param.depends('shape', 'shape.radius', 'shape.center.x', 'shape.center.y')
+    @pm.depends('shape', 'shape.radius', 'shape.center.x', 'shape.center.y')
     def title(self):
         return '## %s (radius=%.1f, center=(%.1f, %.1f))' % (
             type(self.shape).__name__,
@@ -80,6 +92,8 @@ class ShapeViewer(param.Parameterized):
         return pn.Column(self.title, self.view)
 
 
-viewer = ShapeViewer()
+shape_viewer = ShapeViewer()
 
-pn.Row(viewer.param, viewer.panel()).servable()
+layout = pn.Row(shape_viewer.param, shape_viewer.panel())
+
+layout.servable()
