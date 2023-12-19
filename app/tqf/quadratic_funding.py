@@ -1,10 +1,14 @@
 from io import BytesIO
+from math import log
 
 import numpy as np
 import pandas as pd
 import panel as pn
 import param as pm
 from bokeh.models import HoverTool
+from bokeh.palettes import Greens
+
+Greens = Greens[256][::-1]
 
 
 class TunableQuadraticFunding(pm.Parameterized):
@@ -403,8 +407,80 @@ class TunableQuadraticFunding(pm.Parameterized):
             .sort_values('Matching Funds Boosted', ascending=False)
             .reset_index(drop=True)
         )
+        numeric_columns = results.select_dtypes(include=['number']).columns
+        results_view = pn.widgets.Tabulator(
+            results,
+            pagination=None,
+        )
 
-        return results
+        def color_cell(cell_value, min_value, max_value):
+            if (cell_value <= 0) or np.isnan(cell_value):
+                style = 'background-color: white; color: black;'
+                print(style)
+                return style
+            # Normalize the logarithmic value and map it to the reversed Greens palette
+            normalized_value = (log(cell_value) - log(min_value)) / (
+                log(max_value) - log(min_value)
+            )
+            color_index = int(normalized_value * (len(Greens) - 1))
+
+            # Determine text color based on background darkness
+            text_color = 'white' if color_index > len(Greens) // 2 else 'black'
+
+            style = f'background-color: {Greens[color_index]}; color: {text_color};'
+            print(style)
+            return style
+
+        def color_cell(cell_value):
+            style = 'background-color: black; color: white;'
+            print(style)
+            return style
+
+        def color_series(s):
+            print('here is s:')
+            print(s)
+            s_log = s.apply(log)
+            print('here is s_log:')
+            print(s_log)
+            s_norm = (s_log - s_log.min()) / (s_log.max() - s_log.min())
+            print('here is s_norm:')
+            print(s_norm)
+            s_color_index = (s * (len(Greens) - 1)).astype(int)
+            print('here is s_color_index:')
+            print(s_color_index)
+            s_text_color = np.where(s_color_index > len(Greens) // 2, 'white', 'black')
+            print('here is s_text_color:')
+            print(s_text_color)
+            s_style = [
+                f'background-color: {Greens[color_index]}; color: {text_color};'
+                for color_index, text_color in zip(s_color_index, s_text_color)
+            ]
+            print('here is s_style:')
+            print(s_style)
+            return s_style
+
+        for col in numeric_columns:
+            # Set the minimum and maximum values for the colormap
+            min_value = results[col].replace(0, np.nan).min().min()
+            max_value = results[col].max().max()
+            # results_view.style.map(
+            #     lambda cell_value: color_cell(cell_value, min_value, max_value),
+            #     subset=[col],
+            # )
+            # results_view.style.map(
+            #     color_cell,
+            #     subset=[col],
+            # )
+            results_view.style.apply(
+                color_series,
+                subset=[col],
+            )
+        results_view.style.apply(
+            color_series,
+            subset=[numeric_columns],
+        )
+
+        return results_view
 
     def view_results_bar(self):
         def truncate_string(s, max_length=30):

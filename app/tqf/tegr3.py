@@ -62,8 +62,8 @@ tegr3_qf = TunableQuadraticFunding(
     matching_pool=50_000,
 )
 
-template = pn.template.MaterialTemplate(
-    title='Tunable Quadratic Funding',
+tegr3_app = pn.template.MaterialTemplate(
+    title='Tunable Quadratic Funding: TEGR3',
     sidebar=[boost.param for boost in tegr3_boost_factory.boosts]
     + [tegr3_boost_factory.param]
     + [tegr3_qf.param],
@@ -71,7 +71,7 @@ template = pn.template.MaterialTemplate(
 
 # template.main += [boost.view_boost for boost in tegr3_boost_factory.boosts]
 # template.main += [tegr3_boost_factory.boost_outputs]
-template.main += [
+tegr3_app.main += [
     pn.Tabs(
         (
             'Charts',
@@ -84,7 +84,6 @@ template.main += [
             'Data',
             tegr3_qf.view_results,
         ),
+        active=1,
     )
 ]
-
-tegr3_app = template

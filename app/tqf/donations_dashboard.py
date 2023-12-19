@@ -219,7 +219,11 @@ class DonationsDashboard(pm.Parameterized):
             # Determine text color based on background darkness
             text_color = 'white' if color_index > len(Greens) // 2 else 'black'
 
-            return f'background-color: {Greens[color_index]}; color: {text_color};'
+            style = f'background-color: {Greens[color_index]}; color: {text_color};'
+
+            print(style)
+
+            return style
 
         for col in numeric_columns:
             contributions_matrix_view.style.map(color_cell, subset=[col])

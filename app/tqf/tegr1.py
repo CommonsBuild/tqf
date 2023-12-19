@@ -61,7 +61,7 @@ tegr1_qf = TunableQuadraticFunding(
 # )
 
 # TEGR1 Dashboard
-tegr1_app = pn.Tabs(
+tegr1_tabs = pn.Tabs(
     ('Donations', pn.Column(tegr1_donations.view(), tegr1_donations_dashboard.view())),
     # ('TEC Token', pn.Row(tegr1_tec_distribution.view)),
     # ('TEA Token', pn.Row(tegr1_tea_distribution.view)),
@@ -73,3 +73,11 @@ tegr1_app = pn.Tabs(
     active=1,
     dynamic=True,
 )
+
+tegr1_app = pn.template.BootstrapTemplate(
+    title='Tunable Quadratic Funding: TEGR1', sidebar=[]
+)
+
+# template.main += [boost.view_boost for boost in tegr3_boost_factory.boosts]
+# template.main += [tegr3_boost_factory.boost_outputs]
+tegr1_app.main += [tegr1_tabs]

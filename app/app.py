@@ -4,13 +4,11 @@ import logging
 import panel as pn
 import param as pm
 from icecream import ic
+from tqf.tegr1 import tegr1_app
 from tqf.tegr3 import tegr3_app
 from tqf.tqf_math import QuadraticFunding as TQFMath
 
 # from tqf.tegr2 import tegr2_app
-
-
-# from tqf.tegr1 import tegr1_app
 
 
 tqf_math = TQFMath()
@@ -46,11 +44,12 @@ pn.config.throttled = True
 # ipython_thread = threading.Thread(target=start_ipython_in_thread, args=(globals(),))
 # ipython_thread.start()
 
-tegr3_app.servable()
 
 # template = pn.template.VanillaTemplate(title='Tunable Quadratic Funding')
 #
-#
+# template.sidebar += ['[TEGR1](/tegr1)']
+
+
 # class App(pm.Parameterized):
 #     def view(self):
 #         return pn.Tabs(
@@ -84,3 +83,16 @@ tegr3_app.servable()
 # template.servable()
 
 # tegr1_app.servable()
+
+# tegr3_app.servable()
+
+
+pn.serve(
+    {
+        'TEGR1': lambda: tegr1_app.servable(),
+        'TEGR3': lambda: tegr3_app.servable(),
+    },
+    admin=False,
+    show=False,
+    port=5006,
+)
