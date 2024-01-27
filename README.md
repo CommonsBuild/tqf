@@ -1,4 +1,4 @@
-# Alloha: Tunable Quadratic Funding
+# Tunable Quadratic Funding
 TQF is a research initiative by the Token Engineering Commons that enables
 transparent and informed quadratic funding round operation with a focus on
 utilizing token signal inputs to add tunable weights to donations based on
@@ -14,61 +14,63 @@ donor token holdings.
 6. [Contributing](#contributing)
 7. [Testing and Feedback](#testing-and-feedback)
 8. [Specification](#specification)
-9. [TEGRX](#tegrx)
+9. [TEGR](#tegr)
 10. [Acknowledgements](#acknowledgements)
 11. [Contact Information](#contact-information)
 
-### Background
+## Background
 
 The Token Engineering Commons has been running community Quadratic Funding on
 the Grants Stack since the Beta round of April 2023. Since the inception of the
-TEGRX rounds, an experimental feature was introduced called subject matter
-expertise signal boosting SMESB. In SMESB donations weights are boosted
-according to a SME boost level assigned to individual addresses. Donor weights
-are computed as a result of TE academy credentials and $TEC token holdings which
-are meant to indicate expertise in the field of Token Engineering. Read more in
-this blog post:
+Token Engineering Grants Rounds
+([TEGR](https://forum.tecommons.org/c/grants-program/32)), an experimental
+feature was introduced called subject matter expertise signal boosting
+([SMESB](https://medium.com/token-engineering-commons/expertise-and-quadratic-funding-bd4f0c5c3e23)).
+In SMESB donations weights are boosted according to a SME boost weight assigned
+to donor addresses. In TEGR, donor weights are computed as a combination of TE
+academy credentials and $TEC token holdings. These signals are meant to
+indicate expertise in the field of Token Engineering.
 
+For more information on the background of TQF, see the original blog post:  
 [Incorporating Expertise into Quadratic Funding.](https://medium.com/token-engineering-commons/expertise-and-quadratic-funding-bd4f0c5c3e23)
 
 
-### Purpose
+## Purpose
 
-The purpose of this research repository is to contribute data science analysis
-as a tool to the operators of the TEGRX rounds and for other community round
-operators that wish to employ the techniques being highlighted in the tunable 
-quadratic funding library.
+The purpose of this research repository is to provide a data science research
+environment to the operators of the TEGR rounds and a tool for other community
+round operators that wish to employ the techniques being highlighted as tunable
+quadratic funding.
 
 Prospective Benefits of Tunable Quadratic Funding Include:
 * Increased Sybil Resistance
 * Subject Matter Expertise Signal Boosting
-* Token Community Signal Processing
+* Community Token Signal Processing
 * Pluralistic Framework for Analysing Funding Public Goods
 * Platform for Quadratic Funding Research Education and Communication
 
 The TQF tool allows for stepping through the process of quadratic funding and
 understanding the deeper implications of applying token signals as boosts to
-donations. Communities can align resource allocation with their values.
-Improved public goods funding tools can attract more capital to support the
-token engineering field and the greater public goods funding ecosystem.
+donations. This process allows communities to explore the alignment between
+resource allocation and values. As a general contribution to public goods
+tooling, we expect this tool to aid in attracting funding to the domain of
+token engineering public goods and the greater public goods funding ecosystem.
 
-### Scope of the Project
+## Scope of the Project
 
-Proposed Delivery for Q4 2023:  
+Proposed Delivery for Q1 2024:  
 * A paper or extensive forum post with our findings, recommendations and a
 framework to tune QF at the end of this proposal’s period.
 * An open-sourced MVP tool for all operators to be able to tune QF.
-* Training/open sessions for round operators, the token engineering community
-and other interested parties (for QF as a mechanism, its benefits, limitations
-and how to tune it – we’re happy to include a few sessions on learning how to
-use the Grants Stack).
+* Training materials that allow grant operators to confidently apply tunable QF
+to their community grants rounds.
 
 
-### Getting Started
+## Getting Started
 
-Alloha is implemented in Python using the
-[HoloViz](https://holoviz.org) data science stack. Dependency management is
-handled by [Python Poetry](https://python-poetry.org/).
+TQF is implemented in Python using the [HoloViz](https://holoviz.org) data
+science stack. Dependency management is handled by [Python
+Poetry](https://python-poetry.org/).
 
 Installation Requirements
 * Python3.10
@@ -76,10 +78,10 @@ Installation Requirements
 * Git
 
 To run this app locally follow the steps below:
-1. Clone the [repository](https://github.com/CommonsBuild/alloha) and checkout the development branch.
+1. Clone the [repository](https://github.com/CommonsBuild/tqf) and checkout the development branch.
 ```
-git clone git@github.com:CommonsBuild/alloha.git
-cd alloha
+git clone git@github.com:CommonsBuild/tqf.git
+cd tqf
 git checkout ygg
 ```
 2. Install the dependencies and activate python environment
@@ -89,12 +91,12 @@ poetry shell
 ```
 3. Run the app
 ```
-panel serve app/app.py
+panel serve tqf/app.py
 ```
 
 The app should now be running. Navigite to http://localhost:5006/app in your browser.
 
-### Usage
+## Usage
 The framework takes in donation datasets, token distributions, and user
 input to compute the final funding allocation for each project.
 
@@ -105,7 +107,7 @@ The operations required to utilize TQF are the following:
 
 The above steps can be done either programmatically or in the GUI
 
-### Contributing 
+## Contributing 
 
 The project is built using the [HoloViz](https://holoviz.org) data science
 stack with primary heavy lifting from, [Panel](https://panel.holoviz.org/),
@@ -116,14 +118,13 @@ look at contributing to the project.
 
 
 You can get started contributing by picking up
-[issues](https://github.com/CommonsBuild/alloha/issues) on this repository.
+[issues](https://github.com/CommonsBuild/tqf/issues) on this repository.
 
-### Testing and Feedback
+## Testing and Feedback
 It is very valuable for us to receive feedback on our work. Please
-[open an issue](https://github.com/CommonsBuild/alloha/issues) if you have any
+[open an issue](https://github.com/CommonsBuild/tqf/issues) if you have any
 questions or topics of discussion that you would like to bring to our attention.
 Please get in touch with
-
 
 
 
@@ -217,10 +218,10 @@ the donor coefficients, such as:
 - Community voting mechanisms
 - Other custom algorithms designed by the community
 
-By providing this level of customization, Alloha empowers communities to experiment with and optimize their funding mechanisms, leading to more equitable and effective public goods funding.
+By providing this level of customization, TQF empowers communities to experiment with and optimize their funding mechanisms, leading to more equitable and effective public goods funding.
 
 
-## TEGRX
+## TEGR
 
 ### TEGR2
 
@@ -247,12 +248,33 @@ necessary information, statistics and process in the ./main.ipynb file.
   - generate chart for unique holders
     https://dune.com/queries/2457553/4040451
 
+#### History
+
+September 2023,
+YGG Continues app development. The project begins to take shape. Refactoring is required.
+
+August 2023,
+YGG begins assembling a web application oriented towards exploring donations datasets, and tunable QF.
+
+July 2023,
+YGG creates a series of research notebooks that explore the donations dataset, the qf algorithm, the sme signal boosting, and advanced boosting with normalization and sigmoid applied.
+
+June 2023,
+Rxx creates a main.ipynb jupyter notebook that applies the tegr1 boost factor as the [following](https://discord.com/channels/810180621930070088/1050117836498018365/1136395276433760276):
+
+Original TQF Formula:
+
+```python
+coefficient = 1 + 0.5 * (int(tec_tokens_flag) or int(tea_flag))
+```
+
+
 
 ## Acknowledgements
 
 This research repository is maintained by [The Token Engineering Commons
 (TEC)](https://twitter.com/tecmns/) to aid in the operation of the Token
-Engineering Grant Round (TEGRX) series which allocates a target annual
+Engineering Grant Round (TEGR) series which allocates a target annual
 $100,000USD funding to token engineering public goods projects via Quadratic
 Funding.
 

@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "alloha"
+name = "tqf"
 version = "0.1.0"
-description = "Alloha is a TEC SME Signal Boosting Process for Quadradic Funding of TE Public Goods. It is a python tooling kit with dune analytics reference data for data science techniques in the domain of Token Engineering, specifically applied to TEC. Developed in collaboration with the TEC Coordination team."
+description = "TQF is a TEC SME Signal Boosting Process for Quadradic Funding of TE Public Goods. It is a python tooling kit with dune analytics reference data for data science techniques in the domain of Token Engineering, specifically applied to TEC. Developed in collaboration with the TEC Coordination team."
 authors = ["linuxiscool.eth, 0xr3x, TEC Coordination"]
 readme = "README.md"
 
@@ -30,6 +30,7 @@ diskcache = "^5.6.3"
 pyinstrument = "^4.6.1"
 snakeviz = "^2.2.0"
 memray = "^1.11.0"
+pytest = "^7.4.4"
 
 
 [build-system]
