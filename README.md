@@ -249,7 +249,7 @@ Add my_round case to main():
 ```
 
 ### Running your round
-To display round results based on the default parameters:
+To display round results based on the default parameters and save results to `tqf/tqf/output/results.csv`:
 ```bash
 python -m tqf -r my_round -c
 ```
