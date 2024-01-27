@@ -377,8 +377,10 @@ By providing this level of customization, TQF empowers communities to experiment
 ## TEGR
 
 ### TEGR3
+![Screenshot from 2024-01-27 12-04-21](https://github.com/CommonsBuild/tqf/assets/31582215/4e2e49ea-d063-43f7-803e-fce38d072fa2)
 
 ### TEGR2
+![Screenshot from 2024-01-27 12-04-32](https://github.com/CommonsBuild/tqf/assets/31582215/1cd9243b-3ba2-4539-b983-56b199029b11)
 
 ### TEGR1
 - update matching score if:
