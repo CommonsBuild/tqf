@@ -7,73 +7,68 @@ from tqf.boost_factory import BoostFactory
 from tqf.dataset import Donations, TokenDistribution
 from tqf.donations_dashboard import DonationsDashboard
 
-# from .outcomes import Outcomes
+# from tqf.outcomes import Outcomes
 from tqf.quadratic_funding import TunableQuadraticFunding
 
 pn.extension("tabulator")
 
-# TEGR1 Donations
-tegr1_donations = Donations(
+# Donations
+donations = Donations(
     name="TEGR1 Donations", file="tqf/input/tegr1_vote_coefficients_input.csv"
 )
 
-# TEGR1 Donations Dashboard
-tegr1_donations_dashboard = DonationsDashboard(donations=tegr1_donations)
+# Donations Dashboard
+donations_dashboard = DonationsDashboard(donations=donations)
 
-# TEGR1 TEC Token Distribution
-tegr1_tec_distribution = TokenDistribution(
+# TEC Token Distribution
+tec_distribution = TokenDistribution(
     file="tqf/input/tegr1_tec_holders.csv", name="TEC Token", logy=True
 )
 
-# TEGR1 TEA Token Distribution
-tegr1_tea_distribution = TokenDistribution(
+# TEA Token Distribution
+tea_distribution = TokenDistribution(
     file="tqf/input/tegr1_tea_holders_dune.csv", name="TEA Credentials", logy=False
 )
 
-# TEGR1 TEC Boost
-tegr1_tec_boost = Boost(
+# TEC Boost
+tec_boost = Boost(
     name="TEGR1 TEC Boost",
-    distribution=tegr1_tec_distribution,
+    distribution=tec_distribution,
     transformation="Threshold",
     threshold=10,
 )
 
-# TEGR1 TEA Boost
-tegr1_tea_boost = Boost(
+# TEA Boost
+tea_boost = Boost(
     name="TEGR1 TEA Boost",
-    distribution=tegr1_tea_distribution,
+    distribution=tea_distribution,
     transformation="Threshold",
     threshold=1,
 )
 
-# TEGR1 Boost Factory
-tegr1_boost_factory = BoostFactory(
+# Boost Factory
+boost_factory = BoostFactory(
     name="TEGR1 Boost Factory",
-    boosts=[tegr1_tec_boost, tegr1_tea_boost],
+    boosts=[tec_boost, tea_boost],
 )
 
-# TEGR1 Tunable Quadratic Funding
-tegr1_qf = TunableQuadraticFunding(
-    donations_dashboard=tegr1_donations_dashboard, boost_factory=tegr1_boost_factory
+# Tunable Quadratic Funding
+qf = TunableQuadraticFunding(
+    donations_dashboard=donations_dashboard, boost_factory=boost_factory
 )
 
-# TEGR1 Outcomes
 # outcomes = Outcomes(
-#     donations_dashboard=tegr1_donations_dashboard,
-#     boost_factory=tegr1_boost_factory,
-#     tqf=tegr1_qf,
+#     donations_dashboard=donations_dashboard, boost_factory=boost_factory, tqf=qf
 # )
 
-# TEGR1 Dashboard
-tegr1_tabs = pn.Tabs(
-    ("Donations", pn.Column(tegr1_donations.view(), tegr1_donations_dashboard.view())),
-    # ('TEC Token', pn.Row(tegr1_tec_distribution.view)),
-    # ('TEA Token', pn.Row(tegr1_tea_distribution.view)),
-    ("TEC Token Boost", tegr1_tec_boost.view()),
-    ("TEA Token Boost", tegr1_tea_boost.view()),
-    ("Boost Factory", tegr1_boost_factory.view()),
-    ("Tunable Quadradic Funding", tegr1_qf.view()),
-    # ('Outcomes', outcomes.view()),
+# Dashboard
+tabs = pn.Tabs(
+    ("Donations", pn.Column(donations.view(), donations_dashboard.view())),
+    ("TEC Token Boost", tec_boost.view()),
+    ("TEA Token Boost", tea_boost.view()),
+    ("Boost Factory", boost_factory.view()),
+    ("Tunable Quadradic Funding", qf.view()),
+    # ("Outcomes", outcomes.view()),
     active=1,
     dynamic=True,
 )
@@ -82,6 +77,4 @@ tegr1_app = pn.template.BootstrapTemplate(
     title="Tunable Quadratic Funding: TEGR1", sidebar=[]
 )
 
-# template.main += [boost.view_boost for boost in tegr3_boost_factory.boosts]
-# template.main += [tegr3_boost_factory.boost_outputs]
-tegr1_app.main += [tegr1_tabs]
+tegr1_app.main += [tabs]

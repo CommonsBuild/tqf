@@ -66,7 +66,7 @@ framework to tune QF at the end of this proposal’s period.
 to their community grants rounds.
 
 
-## Getting Started
+## Usage
 
 TQF is implemented in Python using the [HoloViz](https://holoviz.org) data
 science stack. Dependency management is handled by [Python
@@ -82,30 +82,183 @@ To run this app locally follow the steps below:
 ```
 git clone git@github.com:CommonsBuild/tqf.git
 cd tqf
-git checkout ygg
 ```
 2. Install the dependencies and activate python environment
 ```
 poetry install
 poetry shell
 ```
-3. Run the app
+3. Run the app by specifying a round.
 ```
-panel serve tqf/app.py
+python -m tqf -r tegr3
 ```
 
 The app should now be running. Navigite to http://localhost:5006/app in your browser.
 
-## Usage
-The framework takes in donation datasets, token distributions, and user
-input to compute the final funding allocation for each project.
+4. To learn about all the available options for running tqf, run
+```
+python -m tqf --help
+```
+
+
+## Adding a New Round
+The framework takes in donation datasets, token distributions, a grants
+dataset, and user input to compute the final funding allocation for each
+project.
 
 The operations required to utilize TQF are the following:
 1. Input a donation dataset
 2. Input token distribution datasets
-3. Configure the parameters of your boosts
+3. Input a grant names dataset
+4. Configure the parameters of your boosts
+5. Output funding allocation results
 
-The above steps can be done either programmatically or in the GUI
+The following sections describe the required datasets and their required
+columns. Datasets may have additional columns that are not required. Columns
+do not need to be in any particular order in the dataset.
+
+Datasets should be added to the `tqf/tqf/input` directory.
+
+### Grants Dataset
+This csv is a list of eligible grants in your round.
+
+        columns={"Grant Name", "Grant Address"},
+
+Example: 
+
+Note, if your donations dataset has a 'Grant Name' column, then you do not need
+to provide this dataset.
+
+### Donations Dataset
+This csv contains all of the donations made in your round.
+
+        columns={"voter", "amountUSD", "grantAddress"},
+
+Example: 
+
+### Token Distribution Dataset
+This csv represents a token as a mapping from address to balance.
+
+        columns={"address", "balance"}
+
+Example: 
+
+### Wiring The New Round
+Once you have added your datasets to the `tqf/tqf/input` directory, you
+need to wire the new round to the tqf app. You can start by copying tegr3.
+
+```bash
+cp tqf/tegr/tegr3.py tqf/tegr/my_round.py
+```
+
+### Edit my_round.py
+Change the filenames to match the datasets that you have added to
+`tqf/tqf/input`. Set the default parameters for tuning as you desire.
+```python
+# Donations
+donations = Donations(
+    name="xxx Donations",
+    file="tqf/input/xxx.csv",
+    grant_names_dataset="tqf/input/xxx.csv",
+)
+
+# Donations Dashboard
+donations_dashboard = DonationsDashboard(donations=donations)
+
+# Token Distribution
+token_distribution = TokenDistribution(
+    file="tqf/input/xxx.csv", name="xxx Token"
+)
+
+# Token Boost
+token_boost = Boost(
+    name="xxx Token Boost",
+    distribution=token_distribution,
+    transformation="LogLinear",
+    max_boost=8,
+    threshold=10,
+)
+
+# Repeat for as many token boosts as needed
+# ...
+
+# Boost Factory
+boost_factory = BoostFactory(
+    name="xxx Boost Factory",
+    boosts=[token_boost],
+    boost_factor=8,
+    combine_method="product",
+)
+
+# Tunable Quadratic Funding
+qf = TunableQuadraticFunding(
+    donations_dashboard=donations_dashboard,
+    boost_factory=boost_factory,
+    mechanism="Cluster Mapping",
+    matching_pool=50_000,
+    matching_percentage_cap=0.15,
+)
+
+# Assemble the app with sidebar
+app = pn.template.MaterialTemplate(
+    title="Tunable Quadratic Funding: xxx",
+    sidebar=[boost.param for boost in boost_factory.boosts]
+    + [boost_factory.param]
+    + [qf.param],
+)
+
+# Add tabs to the main view
+app.main += [
+    pn.Tabs(
+        (
+            "Charts",
+            pn.Column(
+                boost_factory.view_boost_outputs_chart,
+                qf.view_qf_matching_bar,
+            ),
+        ),
+        (
+            "Data",
+            qf.view_results,
+        ),
+        active=0,
+    )
+]
+
+```
+
+### Add my_round to __main__.py
+
+Add an option to click:
+```python
+    type=click.Choice(["tegr1", "tegr2", "tegr3", "all", "my_round"], case_sensitive=False),
+```
+
+Add my_round case to main():
+```python
+# in main()
+    if round == "my_round":
+        if cli:
+            from tqf.tegr.my_round import qf
+
+            print(tegr1_qf.view_results(tabulator=False, to_csv=True))
+        else:
+            from tqf.tegr.my_round import app
+
+            pn.serve(app.servable(), port=port, show=False, admin=admin)
+```
+
+### Running your round
+To display round results based on the default parameters:
+```bash
+python -m tqf -r my_round -c
+```
+
+To run the app in the browser for interactively tuning parameters:
+```bash
+python -m tqf -r my_round
+```
+
 
 ## Contributing 
 
@@ -223,32 +376,28 @@ By providing this level of customization, TQF empowers communities to experiment
 
 ## TEGR
 
+### TEGR3
+
 ### TEGR2
 
 ### TEGR1
-
-This repo encompasses the Jupyter notebooks we have used in order to determine
-matching exponents for all individuals. We have used two Dune queries prepared
-before the fact and alpha round data to create the initial process, and have
-amended it now that the round data is available. You will find all the
-necessary information, statistics and process in the ./main.ipynb file.
-
-### Notes
-
 - update matching score if:
   - holds 10 TEC
     or
-  - TE Academy Certificate
-    (snapshot as of 2023-05-09 23:50 UTC)
-    (based on a combination of):
-    https://dune.com/queries/2457581
-    plus extracts from TEA
-- generate report on round statistics and effect on TE (percentage who have tec / te certificate and donate)
-  - ever since the TE Round was announced and carried out, the $TEC price has stabilised and grown.
-  - generate chart for unique holders
-    https://dune.com/queries/2457553/4040451
+  - TE Academy Certificates
+    - https://dune.com/queries/2457581
+    - plus extracts from TEA
+- TEC Token Holdings
+    - https://dune.com/queries/2457553/4040451
 
-#### History
+Original TQF Formula:
+
+```python
+coefficient = 1 + 0.5 * (int(tec_tokens_flag) or int(tea_flag))
+```
+
+
+### History
 
 September 2023,
 YGG Continues app development. The project begins to take shape. Refactoring is required.
@@ -261,13 +410,6 @@ YGG creates a series of research notebooks that explore the donations dataset, t
 
 June 2023,
 Rxx creates a main.ipynb jupyter notebook that applies the tegr1 boost factor as the [following](https://discord.com/channels/810180621930070088/1050117836498018365/1136395276433760276):
-
-Original TQF Formula:
-
-```python
-coefficient = 1 + 0.5 * (int(tec_tokens_flag) or int(tea_flag))
-```
-
 
 
 ## Acknowledgements
