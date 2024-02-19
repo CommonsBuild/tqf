@@ -395,7 +395,7 @@ By providing this level of customization, TQF empowers communities to experiment
 Original TQF Formula:
 
 ```python
-coefficient = 1 + 0.5 * (int(tec_tokens_flag) or int(tea_flag))
+coefficient = 1 + 1 * (int(tec_tokens_flag) or int(tea_flag))
 ```
 
 
