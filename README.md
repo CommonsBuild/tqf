@@ -46,7 +46,7 @@ Prospective Benefits of Tunable Quadratic Funding Include:
 * Increased Sybil Resistance
 * Subject Matter Expertise Signal Boosting
 * Community Token Signal Processing
-* Pluralistic Framework for Analysing Funding Public Goods
+* Pluralistic Framework for Analyzing Public Goods Funding 
 * Platform for Quadratic Funding Research Education and Communication
 
 The TQF tool allows for stepping through the process of quadratic funding and
@@ -54,7 +54,7 @@ understanding the deeper implications of applying token signals as boosts to
 donations. This process allows communities to explore the alignment between
 resource allocation and values. As a general contribution to public goods
 tooling, we expect this tool to aid in attracting funding to the domain of
-token engineering public goods and the greater public goods funding ecosystem.
+token engineering public goods and the greater web3 public goods funding ecosystem.
 
 ## Scope of the Project
 
@@ -259,6 +259,10 @@ To run the app in the browser for interactively tuning parameters:
 python -m tqf -r my_round
 ```
 
+For more information on usage: 
+```bash
+python -m tqf --help
+```
 
 ## Contributing 
 
